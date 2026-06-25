@@ -8,7 +8,7 @@ import path from "path";
 import { Transform } from "stream";
 import { test } from "@playwright/test";
 
-const BINARY = "./evcc";
+const BINARY = process.platform === "win32" ? "./evcc.exe" : "./evcc";
 const IS_CI = !!process.env["GITHUB_ACTIONS"];
 const LOG_ENABLED = !IS_CI;
 
@@ -102,7 +102,7 @@ async function _restoreDatabase(sqlDumps: string) {
 }
 
 async function _start(config?: string, flags: string | string[] = []) {
-  const configArgs = config ? ["--config", config.includes("/") ? config : `tests/${config}`] : [];
+  const configArgs = config ? ["--config", path.isAbsolute(config) ? config : `tests/${config}`] : [];
   const port = workerPort();
   const ocpp = ocppPort();
 

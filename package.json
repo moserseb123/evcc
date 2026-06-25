@@ -13,6 +13,9 @@
     "dev": "vite",
     "playwright": "playwright test --ui",
     "playwright:ci": "cross-env CI=true playwright test",
+    "test:cypress": "cypress run --component",
+    "test:cypress:open": "cypress open --component",
+    "test:load": "k6 run WAT4/load-tests/websocket-load.js",
     "simulator": "vite tests/simulator",
     "storybook": "storybook dev -p 6006",
     "license": "license-compliance --production --report detailed --allow \"MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD\""
@@ -53,6 +56,7 @@
   "license": "MIT",
   "repository": "github:evcc-io/evcc",
   "devDependencies": {
+    "@cypress/vite-dev-server": "^7.3.3",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^9.39.4",
     "@jest/types": "^30.3.0",
@@ -76,6 +80,7 @@
     "@vue/tsconfig": "^0.9.1",
     "body-parser": "^2.2.2",
     "cross-env": "^10.1.0",
+    "cypress": "^14.5.4",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
