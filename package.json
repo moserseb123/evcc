@@ -15,6 +15,7 @@
     "playwright:ci": "cross-env CI=true playwright test",
     "test:cypress": "cypress run --component",
     "test:cypress:open": "cypress open --component",
+    "test:cypress:open:slow": "cross-env CYPRESS_slowMode=1 cypress open --component",
     "test:load": "k6 run WAT4/load-tests/websocket-load.js",
     "simulator": "vite tests/simulator",
     "storybook": "storybook dev -p 6006",

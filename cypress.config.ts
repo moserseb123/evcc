@@ -28,6 +28,10 @@ const viteConfig = {
  * Cypress Component Testing Konfiguration
  */
 export default defineConfig({
+  env: {
+    // npm run test:cypress:open:slow startet mit CYPRESS_slowMode=1 für Demo-Tempo
+    slowMode: false,
+  },
   component: {
     devServer(cypressDevServerConfig) {
       return viteDevServer({

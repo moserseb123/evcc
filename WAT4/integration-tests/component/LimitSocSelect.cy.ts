@@ -32,7 +32,54 @@ describe("LimitSocSelect.vue – DOM-Rendering und Select-Interaktion", () => {
 
     // force:true nötig da select opacity:0 (von styled span überlagert)
     cy.get("select").select("60", { force: true });
-    // Event wurde mit Integer 60 emittiert (nicht String "60")
+    // Event wurde mit Integer 60 emittiert
     cy.get("@onLimitSocUpdated").should("have.been.calledWith", 60);
+  });
+
+  it("vollständiger Zyklus: Nutzer wählt neues Limit → Event → Prop-Update → Select und Reichweite passen sich an", () => {
+    const onLimitSocUpdated = cy.stub().as("onLimitSocUpdated");
+    // cy.vue() existiert in Cypress 14 nicht – Wrapper aus mount().then() speichern
+    let vueWrapper: any;
+    cy.mount(LimitSocSelect, {
+      props: { limitSoc: 80, rangePerSoc: 5, onLimitSocUpdated },
+    }).then(({ wrapper }) => {
+      vueWrapper = wrapper;
+    });
+
+    // Initialer Zustand: Select zeigt 80, Reichweite 400 km (80 × 5)
+    cy.get("select").should("have.value", "80");
+    cy.get(".extraValue").should("contain.text", "400");
+
+    // Nutzer wählt neues Limit
+    cy.get("select").select("60", { force: true });
+    cy.get("@onLimitSocUpdated").should("have.been.calledWith", 60);
+
+    // Parent-Komponente reagiert und schreibt Prop zurück (reale App-Logik)
+    cy.then(() => vueWrapper.setProps({ limitSoc: 60 }));
+
+    // Select-Wert und Reichweite müssen sich reaktiv aktualisieren
+    // (AnimatedNumber hat 100ms Debounce + 0.5s Animation – Cypress retries warten automatisch)
+    cy.get("select").should("have.value", "60");
+    cy.get(".extraValue").should("contain.text", "300");
+  });
+
+  it("Reichweite-Anzeige aktualisiert sich dynamisch bei jedem neuen limitSoc-Prop", () => {
+    let vueWrapper: any;
+    cy.mount(LimitSocSelect, {
+      props: { limitSoc: 100, rangePerSoc: 4 },
+    }).then(({ wrapper }) => {
+      vueWrapper = wrapper;
+    });
+
+    // 100% → 400 km (100 × 4)
+    cy.get(".extraValue").should("contain.text", "400");
+
+    // Limit auf 50% reduzieren
+    cy.then(() => vueWrapper.setProps({ limitSoc: 50 }));
+    cy.get(".extraValue").should("contain.text", "200");
+
+    // Limit auf 20% reduzieren (Minimum)
+    cy.then(() => vueWrapper.setProps({ limitSoc: 20 }));
+    cy.get(".extraValue").should("contain.text", "80");
   });
 });
