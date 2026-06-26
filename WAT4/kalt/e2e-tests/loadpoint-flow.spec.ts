@@ -1,27 +1,64 @@
 import { test, expect } from "@playwright/test";
 import { start, stop, baseUrl } from "../../../tests/evcc";
+import {
+  startSimulator,
+  stopSimulator,
+  simulatorUrl,
+  simulatorConfig,
+  simulatorApply,
+} from "../../../tests/simulator";
 
 test.use({ baseURL: baseUrl() });
+test.describe.configure({ mode: "serial" });
 
-test.beforeAll(async () => {
-  await start("basics.evcc.yaml");
+test.beforeEach(async () => {
+  await startSimulator();
+  await start(simulatorConfig());
 });
-test.afterAll(async () => {
+
+test.afterEach(async () => {
   await stop();
+  await stopSimulator();
 });
 
-test.beforeEach(async ({ page }) => {
+/**
+ * E2E: Loadpoint-Grundansicht und Statusübergang connected → charging
+ *
+ * Validiert den grundlegenden Ladepunkt-Flow aus Nutzersicht:
+ *   1. Loadpoint erscheint mit Name und Live-Leistungsanzeige in der UI
+ *   2. Fahrzeug wird verbunden → UI zeigt "Connected" (kein aktiver Ladevorgang)
+ *   3. Schnell-Modus aktiviert → Wallbox wechselt auf "C (charging)"
+ *   4. UI spiegelt den Statuswechsel vollständig wider: "Charging" + Fortschrittsbalken
+ */
+
+test("Loadpoint erscheint mit Visualisierungs-Widget", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByTestId("loadpoint")).toHaveCount(1);
+  await expect(page.getByTestId("visualization")).toBeVisible();
 });
 
-test.describe("Loadpoint-Flow", () => {
-  test("zeigt Titel und Live-Leistung", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Hello World" })).toBeVisible();
-    await expect(page.getByTestId("visualization")).toContainText("1.0 kW");
-  });
+test("Statusübergang connected → charging vollständig im UI abgebildet", async ({ page }) => {
+  // Fahrzeug verbunden, noch kein Ladevorgang aktiv
+  await page.goto(simulatorUrl());
+  await page.getByTestId("loadpoint0").getByText("B (connected)").click();
+  await simulatorApply(page);
 
-  test("zeigt genau einen Loadpoint", async ({ page }) => {
-    await expect(page.getByTestId("loadpoint")).toHaveCount(1);
-    await expect(page.getByRole("heading", { name: "Carport" })).toBeVisible();
-  });
+  await page.goto("/");
+  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Connected");
+
+  // Schnell-Modus aktivieren
+  const modeGroup = page.getByTestId("mode");
+  const schnellButton = modeGroup.getByRole("button").last();
+  await schnellButton.click();
+  await expect(schnellButton).toHaveClass(/active/);
+
+  // Wallbox reagiert: Ladevorgang gestartet
+  await page.goto(simulatorUrl());
+  await page.getByTestId("loadpoint0").getByText("C (charging)").click();
+  await simulatorApply(page);
+
+  // UI zeigt Statuswechsel und animierten Fortschrittsbalken
+  await page.goto("/");
+  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging");
+  await expect(page.getByTestId("loadpoint").locator(".progress-bar-animated")).toHaveCount(1);
 });
