@@ -5,7 +5,11 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: ".",
-  testMatch: ["tests/**/*.spec.ts", "WAT4/e2e-tests/**/*.spec.ts"],
+  testMatch: [
+    "tests/**/*.spec.ts",
+    "WAT4/e2e-tests/**/*.spec.ts",
+    "WAT4/kalt/e2e-tests/**/*.spec.ts",
+  ],
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 4 : 0,
   timeout: 60000, // 60s
