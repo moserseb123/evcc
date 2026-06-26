@@ -2,7 +2,7 @@
 
 **Modul:** WAT4 – Qualitätssicherung und Testen
 **Datum:** 26. Juni 2026
-**Bearbeiter:** Sebastian Moser
+**Bearbeiter:** Sebastian Moser, Sebastian Kaltenegger
 **Abgabe:** 27. Juni 2026
 
 ---
@@ -40,15 +40,6 @@ Browser
                  /api/state  (initialer State)
 ```
 
-**Wichtige Komponenten:**
-
-- **`store.ts`** – Einziger Eintrittspunkt für alle WebSocket-Nachrichten. Verwaltet den globalen reaktiven Zustand via `setProperty()` mit Dot-Notation-Pfaden (z. B. `"loadpoints.0.chargePower"`).
-- **`Vehicle.vue`** – Zentraler State-Mediator: leitet Props via `collectProps()` automatisch an alle Kinder-Komponenten weiter (VehicleStatus, VehicleSoc, LimitSocSelect, ChargingPlan, BatteryBoostButton).
-- **`VehicleStatus`** – Berechnet Lade-Statustexte und Statusbadges reaktiv aus Props (minSoc, planActive, charging, etc.).
-- **`ChargingPlan.vue`** – Abfahrtsplan-Visualisierung: zeigt Abfahrtszeit und Ziel-SoC im Plan-Button.
-- **`BatteryBoostButton.vue`** – Sicherheitskritische Komponente: steuert temporären Batterie-Boost mit Grenzwert-Logik und optimistischem UI-Feedback.
-- **`Warnings.vue`** – Zeigt kritische Hinweise beim Einrichten eines Ladeplans (Limit-Überschreitung, Zeitfenster, Fahrzeuglimit).
-
 ---
 
 ## 2. Teststrategie
@@ -64,38 +55,55 @@ Vor dieser Arbeit hatte das evcc-Frontend eine erhebliche **Coverage-Lücke**:
 | store.ts | kritischer Kern | **0 Tests** |
 | uiLoadpoints.ts | UI-State-Zentrale | **0 Tests** |
 
-Die getesteten Utility-Funktionen (Formatter, Tarif-Slots) nutzten bereits **Vitest**. Für neue Tests wurden daher bevorzugt **ungetestete kritische Bereiche** ausgewählt. Wo sich Überschneidungen nicht vermeiden ließen, kommt ein anderes Test-Framework zum Einsatz.
-
-### Warum nur Frontend?
-
-Das Projektziel ist explizit auf das Frontend beschränkt. Das Go-Backend ist ein eigenständiges Subsystem mit eigener Testinfrastruktur. Die Frontend-Tests laufen vollständig ohne laufendes Backend (Unit- und Integrationstests), oder nutzen einen dedizierten **Simulator** (E2E-Tests), der das Backend imitiert.
-
 ### Framework-Auswahl
 
-| Test-Typ | Framework | Begründung |
-|----------|-----------|------------|
-| Unit-Tests | **Vitest** + `@vue/test-utils` | Standard im Projekt; passt zu vorhandener CI; `happy-dom` für schnelle DOM-Simulation |
-| Integrationstests | **Cypress Component Testing** | Echtes Chromium-Rendering; grundlegend anderes Framework als Vitest; testet CSS, DOM-Events und Browser-APIs |
-| E2E-Tests | **Playwright** | Bereits im Projekt vorhanden; testet gegen echten evcc-Server mit Simulator |
-| Lasttest | **k6** | Neu im Projekt; spezialisiert auf HTTP/WebSocket-Lastsimulation |
+| Test-Typ | Framework | Bearbeiter | Begründung |
+|----------|-----------|------------|------------|
+| Unit-Tests | **Vitest** + `@vue/test-utils` | Moser | Standard im Projekt; passt zu vorhandener CI |
+| Unit-Tests | **Jest** + ts-jest | Kalt | Isolierte Config, die nicht mit Vitest kollidiert |
+| Integrationstests | **Cypress Component Testing** | Beide | Echtes Chromium-Rendering; testet CSS, Events und Browser-APIs ohne Backend |
+| E2E-Tests | **Playwright** | Beide | Bereits im Projekt vorhanden; testet gegen echten evcc-Server |
+| Lasttest | **k6** | Beide | Spezialisiert auf HTTP/WebSocket-Lastsimulation |
 
-### Testeinteilung (eigene Arbeit)
+### Gesamtübersicht aller Tests
 
-| Nr. | Typ | Framework | Datei | Tests |
-|-----|-----|-----------|-------|-------|
-| UT-1 | Unit | Vitest | `unit-tests/chargingPlanWarnings.test.ts` | 9 |
-| IT-1 | Integration | Cypress CT | `integration-tests/component/BatteryBoostIntegration.cy.ts` | 4 |
-| IT-2 | Integration | Cypress CT | `integration-tests/component/MinSocCharging.cy.ts` | 4 |
-| IT-3 | Integration | Cypress CT | `integration-tests/component/DeparturePlan.cy.ts` | 5 |
-| E2E-1 | E2E | Playwright | `e2e-tests/charging-lifecycle.spec.ts` | 1 |
-| E2E-2 | E2E | Playwright | `e2e-tests/smart-cost-flow.spec.ts` | 1 |
-| LT-1 | Last | k6 | `load-tests/websocket-load.js` | – |
+| Nr. | Typ | Framework | Datei | Bearbeiter | Tests |
+|-----|-----|-----------|-------|------------|-------|
+| UT-1 | Unit | Vitest | `unit-tests/chargingPlanWarnings.test.ts` | Moser | 9 |
+| UT-2 | Unit | Jest | `kalt/unit-tests/convertRates.jest.ts` | Kalt | – |
+| UT-3 | Unit | Jest | `kalt/unit-tests/forecastSolar.jest.ts` | Kalt | – |
+| UT-4 | Unit | Jest | `kalt/unit-tests/forecastLowestSlot.jest.ts` | Kalt | – |
+| UT-5 | Unit | Jest | `kalt/unit-tests/forecastStaticTariff.jest.ts` | Kalt | – |
+| UT-6 | Unit | Jest | `kalt/unit-tests/ocpp.jest.ts` | Kalt | – |
+| UT-7 | Unit | Jest | `kalt/unit-tests/remote.jest.ts` | Kalt | – |
+| UT-8 | Unit | Jest | `kalt/unit-tests/tariffCostRange.jest.ts` | Kalt | – |
+| UT-9 | Unit | Jest | `kalt/unit-tests/tariffFindRate.jest.ts` | Kalt | – |
+| UT-10 | Unit | Jest | `kalt/unit-tests/tariffGenerateSlots.jest.ts` | Kalt | – |
+| UT-11 | Unit | Jest | `kalt/unit-tests/uiLoadpoints-layout.jest.ts` | Kalt | – |
+| IT-1 | Integration | Cypress CT | `integration-tests/component/BatteryBoostIntegration.cy.ts` | Moser | 4 |
+| IT-2 | Integration | Cypress CT | `integration-tests/component/MinSocCharging.cy.ts` | Moser | 4 |
+| IT-3 | Integration | Cypress CT | `integration-tests/component/DeparturePlan.cy.ts` | Moser | 5 |
+| IT-4 | Integration | Cypress CT | `kalt/integration-tests/TariffChart.cy.ts` | Kalt | 3 |
+| IT-5 | Integration | Cypress CT | `kalt/integration-tests/DateNavigator.cy.ts` | Kalt | 3 |
+| IT-6 | Integration | Cypress CT | `kalt/integration-tests/SessionTable.cy.ts` | Kalt | 2 |
+| E2E-1 | E2E | Playwright | `e2e-tests/charging-lifecycle.spec.ts` | Moser | 1 |
+| E2E-2 | E2E | Playwright | `e2e-tests/smart-cost-flow.spec.ts` | Moser | 1 |
+| E2E-3 | E2E | Playwright | `kalt/e2e-tests/charge-plan-flow.spec.ts` | Kalt | 2 |
+| E2E-4 | E2E | Playwright | `kalt/e2e-tests/loadpoint-flow.spec.ts` | Kalt | 2 |
+| LT-1 | Last | k6 | `load-tests/websocket-load.js` | Moser | – |
+| LT-2 | Last | k6 | `kalt/load-tests/sessions-load.js` | Kalt | – |
 
-**Gesamt: 24 Testfälle** (9 Unit, 13 Integration, 2 E2E, 1 Lasttest)
+**Gesamt: 43+ Testfälle** (9 Moser Unit + 34 Kalt Unit + 13 Moser IT + 8 Kalt IT + 2 Moser E2E + 4 Kalt E2E + 2 Lasttests)
 
 ---
 
-## 3. Unit-Tests (Vitest)
+---
+
+# Teil A – Sebastian Moser
+
+---
+
+## A.1 Unit-Tests (Vitest)
 
 ### UT-1: `Warnings.vue` – Ladeplan-Warnungslogik
 
@@ -116,27 +124,17 @@ Das Projektziel ist explizit auf das Frontend beschränkt. Das Go-Backend ist ei
 9. **Modus-Warnung:** Hinweis wenn Lademodus `"off"` – Plan läuft nie an; kein Hinweis im `"pv"`-Modus
 
 **Warum `Warnings.vue` und warum Unit-Test:**
-Falsche Warnungen (false positive/negative) führen direkt zu unbemerkt fehlgeschlagenen Ladeplänen oder unnötiger Nutzerverwirrung. Die fünf `computed`-Eigenschaften sind vollständig durch Props gesteuert und haben keine Seiteneffekte – ideale Bedingungen für isolierte Unit-Tests ohne Browser. Besonders die `notReachableInTime`-Toleranz (60 Sekunden) ist eine nicht-offensichtliche Designentscheidung, die explizit durch einen Boundary-Test abgesichert werden muss.
+Falsche Warnungen führen direkt zu unbemerkt fehlgeschlagenen Ladeplänen oder unnötiger Nutzerverwirrung. Die fünf `computed`-Eigenschaften sind vollständig durch Props gesteuert und haben keine Seiteneffekte – ideale Bedingungen für isolierte Unit-Tests ohne Browser. Besonders die `notReachableInTime`-Toleranz (60 Sekunden) ist eine nicht-offensichtliche Designentscheidung, die explizit durch einen Boundary-Test abgesichert werden muss.
 
 ---
 
-## 4. Integrationstests (Cypress Component Testing)
+## A.2 Integrationstests (Cypress Component Testing)
 
-### Warum Cypress CT als Integrationstest-Framework?
+### Warum Cypress CT?
 
-Cypress Component Testing (CT) rendert Vue-Komponenten in einem **echten Chromium-Browser**. Dies unterscheidet sich fundamental von Vitest/happy-dom:
+Cypress Component Testing rendert Vue-Komponenten in einem echten Chromium-Browser. Die Unit-Tests testen das berechnete Modell einer Komponente. Die Integrationstests testen wie mehrere Komponenten im echten Browser zusammenspielen – Props fließen über Komponentengrenzen, Ereignisse werden weitergeleitet und der DOM aktualisiert sich reaktiv.
 
-| Merkmal | Vitest + happy-dom | Cypress CT (Chromium) |
-|---------|-------------------|----------------------|
-| DOM-Implementierung | Simuliert (happy-dom) | Echte Browser-Engine |
-| CSS-Rendering | Nicht vorhanden | Vollständig |
-| Native Events | Teilweise simuliert | Echter Event-Loop |
-| CSS-Variablen | Nicht berechnet | Vollständig berechnet |
-| Animationen | Nicht ausgeführt | Laufen wie in Produktion |
-
-Die **Unit-Tests** testen das **berechnete Modell** einer Komponente (welche Werte sie produziert). Die **Integrationstests** testen die **DOM-Realisierung mehrerer Komponenten zusammen** – wie Props über Komponentengrenzen fließen, Ereignisse weitergeleitet werden und sich der DOM reaktiv aktualisiert.
-
-Alle Integrationstests verwenden `Vehicle.vue` als echten Elternteil. Vehicle nutzt den `collector`-Mixin, der via `collectProps()` Props automatisch an die richtigen Kinder verteilt. Dieser Mechanismus kann ausschließlich im echten Browser mit echten Vue-Instanzen verifiziert werden.
+Alle drei Tests verwenden `Vehicle.vue` als Elternteil, der die Daten automatisch an die richtigen Kindkomponenten verteilt.
 
 ---
 
@@ -204,120 +202,140 @@ Die Besonderheit dieses Tests ist, dass eine einzige Zustandsänderung (`planAct
 
 ---
 
-## 5. End-to-End-Tests (Playwright)
+## A.3 End-to-End-Tests (Playwright)
 
-### Testumgebung
-
-Playwright-Tests laufen gegen einen **echten evcc-Server** mit einem dedizierten Simulator-Backend:
+Playwright-Tests laufen gegen einen echten evcc-Server mit einem dedizierten Simulator-Backend:
 
 ```
 ┌─────────────┐    WebSocket     ┌───────────────┐
 │   Playwright │ ──────────────► │  evcc-Server  │
 │   (Chromium) │ ◄────────────── │  (go run .)   │
-│             │    REST-API      │               │
-└─────────────┘                  │  Simulator    │
-                                 │  (YAML-Config)│
-                                 └───────────────┘
+│             │    REST-API      └───────────────┘
+└─────────────┘
 ```
-
-Der Simulator (konfiguriert in `tests/simulator.evcc.yaml`) stellt einen Ladepunkt mit Fahrzeug, PV-Anlage und Stromtarif zur Verfügung.
-
----
 
 ### E2E-1: Fahrzeug-Ladelifecycle
 
 **Datei:** `WAT4/e2e-tests/charging-lifecycle.spec.ts`
 
-**Testszenario:**
-Fahrzeug ist verbunden (Zustand B/C), Modus „Schnell" (NOW) wird gewählt → Simulator reagiert → UI zeigt animierten Ladebalken und Status „Charging…".
-
-**Warum dieser E2E-Test kritisch ist:**
-Dies ist die **Kern-User-Journey** in evcc: Fahrzeug einstecken → Modus wählen → Ladevorgang startet. Der Test validiert, dass WebSocket-Daten vom echten Backend korrekt in der UI ankommen, Modus-Buttons auf Nutzerinteraktion reagieren und `Loadpoint`, `Mode` sowie `VehicleStatus` korrekt zusammenwirken. Kein anderer Test deckt diesen vollständigen Ablauf mit echtem Server-Backend ab.
-
----
+Fahrzeug ist verbunden, Modus „Schnell" wird gewählt → Simulator reagiert → UI zeigt animierten Ladebalken und Status „Charging…". Dies ist die Kern-User-Journey in evcc und wird von keinem anderen Test mit echtem Backend abgedeckt.
 
 ### E2E-2: Smart-Cost-Threshold erlaubt Ladestart
 
 **Datei:** `WAT4/e2e-tests/smart-cost-flow.spec.ts`
 
-**Testszenario:**
-Fahrzeug verbunden, kein aktiver Ladevorgang → Preislimit ≤ 40,0 ct/kWh konfigurieren → Simulator-Tarif liegt darunter → Modus „Schnell" wählen → UI zeigt „Charging…" und Smart-Cost-Badge mit Preis-Limit-Vergleich (`≤ 40.0 ct`).
-
-**Warum dieser E2E-Test kritisch ist:**
-Smart-Cost-Laden ist der **wirtschaftliche Kern-Use-Case** für Nutzer mit dynamischen Stromtarifen. Der Test prüft den vollständigen Kausal-Flow: Threshold-Setzen → Gate öffnet sich → Statusübergang Connected → Charging. Die Assertion `≤ 40.0 ct` verifiziert, dass der UI der konkrete Preis-Threshold korrekt aus dem Backend empfangen und angezeigt wird.
+Preislimit ≤ 40,0 ct/kWh konfigurieren → Simulator-Tarif liegt darunter → Laden startet → UI zeigt „Charging…" und Smart-Cost-Badge mit Preis-Limit-Vergleich (`≤ 40.0 ct`). Testet den vollständigen wirtschaftlichen Kern-Use-Case für Nutzer mit dynamischen Stromtarifen.
 
 ---
 
-## 6. Lasttest (k6)
+## A.4 Lasttest (k6)
 
 **Datei:** `WAT4/load-tests/websocket-load.js`
 
-### Lastprofil
+Testet die WebSocket-Verbindung unter gleichzeitiger Last von bis zu 20 virtuellen Nutzern (simulierte Browser-Tabs). Jeder Nutzer ruft `/api/state` ab und hält eine WebSocket-Verbindung für 5 Sekunden offen.
 
-```
-Gleichzeitige Verbindungen
-20 ┤                    ╭──╮
-   │                   /    \
-10 ┤              ╭───╯      \
-   │             /            \
- 5 ┤        ╭───╯              \
-   │       /                    \
- 0 ┤──────╯                      ╰────
-   0s    20s         50s        70s  80s
-```
+| Phase | Dauer | Ziel |
+|-------|-------|------|
+| Ramp-up | 20 s | 5 VU |
+| Normal | 30 s | 10 VU |
+| Spitze | 20 s | 20 VU |
+| Ramp-down | 10 s | 0 VU |
 
-| Phase | Dauer | Ziel | Zweck |
-|-------|-------|------|-------|
-| Ramp-up | 20 s | 5 VU | Sanfter Start |
-| Normal | 30 s | 10 VU | Typischer Haushalt (mehrere Geräte) |
-| Spitze | 20 s | 20 VU | Extremfall (Gäste, viele Tabs) |
-| Ramp-down | 10 s | 0 VU | Sauberes Beenden |
+**Thresholds:** WS-Verbindungszeit p95 < 500 ms, API-Antwortzeit p95 < 200 ms, Fehlerrate < 5 %.
 
-### Qualitätsschwellenwerte (Thresholds)
-
-| Metrik | Schwellenwert | Begründung |
-|--------|--------------|------------|
-| `ws_connecting p(95)` | < 500 ms | WebSocket-Verbindung muss schnell aufgebaut werden |
-| `http_req_duration p(95)` | < 200 ms | REST-API-Antworten unter Haushaltslast |
-| `ws_errors rate` | < 5 % | Fehlertoleranz für Netzwerkprobleme |
-| `api_errors rate` | < 5 % | API-Stabilität unter Last |
-
-### Gemessene Metriken
-
-Für jeden virtuellen User (VU = simulierter Browser-Tab):
-
-1. **REST-API-Call** `GET /api/state` – initialer Zustand wie beim App-Start
-2. **WebSocket-Verbindung** – 5 Sekunden offen (reale Sessions dauern Stunden)
-3. **Erste WS-Nachricht** – Latenz bis zum ersten State-Update gemessen
-
-### Warum dieser Lasttest kritisch ist
-
-evcc ist ein **Heimserver**, der von mehreren Geräten gleichzeitig überwacht wird (Smartphone, Tablet, PC, mehrere Browser-Tabs). Die Frontend-Architektur basiert **vollständig** auf WebSocket für Echtzeit-Updates – ohne funktionierende WebSocket-Verbindung sieht die UI statische, veraltete Ladedaten und Nutzer können nicht eingreifen (kein PV-Modus setzen, kein Laden stoppen). Vor dieser Arbeit existierte **kein einziger Lasttest** im Projekt.
-
-### Ausführung
-
-```bash
-# Schritt 1: evcc-Server starten
-go run . --config tests/simulator.evcc.yaml
-
-# k6 installieren (Windows, einmalig)
-winget install k6
-
-# Schritt 2: Lasttest ausführen
-npm run test:load
-# alternativ:
-k6 run WAT4/load-tests/websocket-load.js
-```
+evcc basiert vollständig auf WebSocket für Echtzeit-Updates – ohne funktionierende Verbindung sieht die UI veraltete Ladedaten und Nutzer können nicht eingreifen.
 
 ---
 
-## 7. Testumgebung und Isolation
+---
+
+# Teil B – Lukas Kalt
+
+---
+
+## B.1 Unit-Tests (Jest)
+
+**Framework:** Jest mit ts-jest, isolierte Config (`jest.config.cjs`), die nur `*.jest.ts`-Dateien einsammelt und damit nicht mit Vitest oder Playwright kollidiert.
+
+Zehn Dateien mit zusammen 34 Fällen, alle aus den Bereichen Tarif-Utilities, Forecast und UI-State:
+
+| Datei | Getestete Funktion | Warum wichtig |
+|-------|-------------------|---------------|
+| `convertRates.jest.ts` | Wandelt Roh-Tarifdaten in das Slot-Format des UI um | Jede Tarif- und Forecast-Anzeige baut darauf auf; ein Fehler zieht sich durch die gesamte Preisdarstellung |
+| `forecastSolar.jest.ts` | `adjustedSolar` – skaliert PV-Prognose mit Kalibrierfaktor | Ein falscher Faktor verfälscht die komplette Solar-Vorhersage |
+| `forecastLowestSlot.jest.ts` | `findLowestSumSlotIndex` – findet günstigstes Ladefenster | Kern des Smart-Chargings; ein Off-by-one verschiebt das Fenster und kostet Geld |
+| `forecastStaticTariff.jest.ts` | `isStaticTariff` – unterscheidet statischen von dynamischem Tarif | Entscheidet ob Smart-Cost-Planung überhaupt eingeblendet wird |
+| `ocpp.jest.ts` | Baut Wallbox-URL aus `externalUrl` bzw. Hostname/Port | Falsche URL macht die Wallbox unerreichbar |
+| `remote.jest.ts` | `isRemoteClientActive` – Online-Erkennung über 5-Minuten-Grenze | Die Zeitgrenze ist die fehleranfällige Stelle und steuert die Online-Anzeige |
+| `tariffCostRange.jest.ts` | `calculateCostRange` – ermittelt min/max-Preis | Bildet die Preis-Skala der Forecast-Anzeige; Slots ohne Wert dürfen sie nicht verzerren |
+| `tariffFindRate.jest.ts` | `findRateInRange` – liefert den gerade geltenden Tarif | Grundlage jeder aktuellen Kostenanzeige |
+| `tariffGenerateSlots.jest.ts` | `generateRateSlots` – rastert Tarife in 15-Minuten-Slots | Dieses Raster speist die gesamte Preis- und Lade-Markierung; eine falsche Rasterung verschiebt alle Markierungen |
+| `uiLoadpoints-layout.jest.ts` | `setLoadpointOrder` – Reihenfolge und Sichtbarkeit der Loadpoints | Ein Fehler zeigt Ladepunkte in falscher Reihenfolge oder gar nicht an |
+
+Es sind durchweg reine Funktionen mit klaren Verzweigungen und Randfällen (leeres Array, null, Zeitgrenzen, Rundung) – genau dort steckt die Aussagekraft.
+
+---
+
+## B.2 Integrationstests (Cypress Component Testing)
+
+Einzelne Vue-Komponenten werden mit `cy.mount` im echten Browser gemountet und auf DOM, CSS-Klassen und Events geprüft – ohne laufendes Backend. Der i18n-Mount-Helper wird mit Mosers Setup geteilt.
+
+### IT-4: `TariffChart` – Tarif-Balkendiagramm
+
+Prüft, dass jedes Tarif-Fenster als Balken erscheint, das Fenster mit aktivem Laden hervorgehoben wird und teure Fenster eine Warnung bekommen. Der Nutzer soll daran ablesen können wann geladen wird und wann der Strom teuer ist – eine falsche Markierung führt zu falschen Annahmen über die Ladekosten.
+
+### IT-5: `DateNavigator` – Datumsnavigation
+
+Prüft, dass nicht vor den ältesten Ladesessions zurück- und nicht in die Zukunft vorwärtsnavigiert werden kann, und dass die Tageswahl den gewählten Tag nachlädt. Die Grenzen bilden den verfügbaren Datenbereich ab – ohne sie landet der Nutzer in leeren Ansichten.
+
+### IT-6: `SessionTable` – Ladehistorie
+
+Prüft, dass ohne Ladevorgänge ein Leer-Hinweis erscheint und je Ladevorgang eine Zeile gelistet wird. Ein Fehler bedeutet entweder einen leeren Verlauf trotz vorhandener Daten oder einen Absturz bei vorhandenen Daten.
+
+---
+
+## B.3 End-to-End-Tests (Playwright)
+
+Tests laufen im echten Browser gegen ein gebootetes evcc mit eigener Fixture (`basics.evcc.yaml`). Vor jedem Test wird der Server gestartet, danach wieder gestoppt.
+
+### E2E-3: `charge-plan-flow` – Ladeplanung öffnen
+
+Der Nutzer öffnet über den Ladeplan-Button die Ladeplanung, das Modal erscheint und enthält die Planungsfelder für Zeit und Energiemenge. Die Ladeplanung ist der zentrale Smart-Charging-Workflow und dieser komplette Pfad – Klick, Modal, Planungs-UI – wird von keinem anderen Test abgedeckt.
+
+### E2E-4: `loadpoint-flow` – Hauptansicht mit Live-Daten
+
+Prüft, dass die Hauptansicht Titel, Live-Leistung (1,0 kW) und genau einen Ladepunkt zeigt. Bestätigt, dass die WebSocket-Daten vom echten Backend korrekt im Ladepunkt-Widget ankommen.
+
+---
+
+## B.4 Lasttest (k6)
+
+**Datei:** `WAT4/kalt/load-tests/sessions-load.js`
+
+Testet den Endpoint `/api/sessions`, der die Ladesessions aus SQLite liest. Ein DB-gestützter Read zeigt ein anderes Lastverhalten als ein reiner In-Memory-State.
+
+**Lastprofil:** 15 Sekunden hoch auf 20 virtuelle Nutzer, 30 Sekunden halten, 10 Sekunden runter. Jeder Nutzer ruft `/api/sessions` ab und prüft Status 200 und dass die Antwort ein Array ist.
+
+**Thresholds:** 95-Perzentil-Antwortzeit < 500 ms, Fehlerrate < 1 %. Das Perzentil statt eines Mittelwerts, weil die Tail-Latenz die tatsächliche Nutzererfahrung bestimmt.
+
+---
+
+---
+
+# Gemeinsame Abschnitte
+
+---
+
+## C.1 Testumgebung und Isolation
 
 ### Testausführung
 
 ```bash
-# Unit-Tests (Vitest) – keine Abhängigkeiten
+# Unit-Tests Moser (Vitest)
 npm run test -- --run WAT4
+
+# Unit-Tests Kalt (Jest)
+npx jest --config WAT4/kalt/jest.config.cjs
 
 # Integrationstests (Cypress CT) – kein Backend nötig
 npm run test:cypress        # CI-Modus
@@ -326,31 +344,32 @@ npm run test:cypress:open   # Interaktiver Browser-Modus
 # E2E-Tests (Playwright) – erfordert laufenden evcc-Server
 go run . --config tests/simulator.evcc.yaml &
 npx playwright test WAT4/e2e-tests/
+npx playwright test WAT4/kalt/e2e-tests/
 
-# Lasttest (k6) – erfordert laufenden evcc-Server
+# Lasttests (k6)
 npm run test:load
+k6 run WAT4/kalt/load-tests/sessions-load.js
 ```
 
 ### Testisolation
 
 | Test-Typ | Isolationsmechanismus |
 |----------|----------------------|
-| Unit (Vitest) | Jeder Test mount die Komponente frisch; kein globaler State; kein Backend |
-| Integration (Cypress CT) | Jeder `it()`-Block mounted Komponente neu; Stubs für nicht relevante Sub-Komponenten |
-| E2E (Playwright) | `beforeEach` startet frischen Simulator + evcc-Server; `afterEach` stoppt beide |
-| Lasttest (k6) | Jeder VU ist unabhängig; Server muss manuell gestartet werden |
+| Unit Vitest | Jeder Test mountet die Komponente frisch; kein globaler State; kein Backend |
+| Unit Jest | Reine Funktionen, kein Backend; `clearMocks` zwischen den Fällen; eigene Config kollidiert nicht mit Vitest |
+| Integration (Cypress CT) | Jeder `it()`-Block mountet Komponente neu; Stubs für nicht relevante Sub-Komponenten |
+| E2E (Playwright) | `beforeEach` startet frischen Server; `afterEach` stoppt ihn; jeder Test bekommt eigenen Browser-Context |
+| Lasttest (k6) | Jeder VU ist unabhängig; Server wird manuell gestartet |
 
 ### Mock-Strategie
 
-- **i18n**: `$t`, `$te`, `$i18n` werden in allen Tests gemockt (kein echtes vue-i18n nötig)
-- **Sub-Komponenten**: `VehicleSoc`, `ChargingPlan` (in IT-1/IT-2) und `VehicleTitle` werden gestubbt, um Tests auf die Ziel-Komponentenkette zu fokussieren. `VehicleStatus`, `BatteryBoostButton` und `ChargingPlan` (in IT-3) bleiben bewusst ungestubbt.
-- **Backend**: Unit- und Integrationstests benötigen **kein** laufendes Backend
+- **i18n**: `$t`, `$te`, `$i18n` werden in allen Tests gemockt – wird von beiden Bearbeitern über denselben Cypress-Mount-Helper geteilt
+- **Sub-Komponenten**: `VehicleSoc`, `ChargingPlan` (in IT-1/IT-2) werden gestubbt, um Tests auf die relevante Komponentenkette zu fokussieren
+- **Backend**: Unit- und Integrationstests benötigen kein laufendes Backend
 
 ---
 
-## 8. CI/CD-Integration
-
-Die Tests sind so strukturiert, dass sie in einer CI/CD-Pipeline ausgeführt werden können:
+## C.2 CI/CD-Integration
 
 ```yaml
 # Beispiel: GitHub Actions
@@ -358,7 +377,8 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - run: npm run test
+      - run: npm run test          # Vitest (Moser)
+      - run: npx jest --config WAT4/kalt/jest.config.cjs  # Jest (Kalt)
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -369,53 +389,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: go build -o evcc . && ./evcc --config tests/simulator.evcc.yaml &
-      - run: npx playwright test WAT4/e2e-tests/
+      - run: npx playwright test WAT4/e2e-tests/ WAT4/kalt/e2e-tests/
 ```
 
-Der Lasttest ist **nicht** für automatische CI-Ausführung vorgesehen, da er einen laufenden Server und eine kalibrierte Umgebung voraussetzt. Er wird manuell vor Releases ausgeführt.
+Lasttests sind nicht für automatische CI-Ausführung vorgesehen, da sie einen laufenden Server und eine kalibrierte Umgebung voraussetzen.
 
 ---
 
-## 9. Testergebnisse
-
-### Unit-Tests (Vitest)
-
-```
-Test Files  1 passed (1)
-     Tests  9 passed (9)
-  Duration  ~2s
-```
-
-Alle 9 Testfälle laufen grün. Die Datei wird automatisch durch Vitests Standard-Glob-Pattern `**/*.test.ts` gefunden.
-
-### Integrationstests (Cypress CT)
-
-Alle 13 Integrationstests in den drei Cypress-CT-Dateien laufen erfolgreich durch. Die Tests wurden im interaktiven Cypress-Browser-Modus (`npm run test:cypress:open`) verifiziert.
-
-### E2E-Tests (Playwright)
-
-Die E2E-Tests erfordern einen laufenden evcc-Server mit Go-Build-Umgebung. Eine Verifikation erfordert `go run . --config tests/simulator.evcc.yaml` und anschließend `npx playwright test WAT4/e2e-tests/`.
-
-### Lasttest (k6)
-
-Der Lasttest erfordert eine k6-Installation (`winget install k6`) und einen laufenden evcc-Server. Erwartete Ergebnisse bei lokalem Betrieb: WS-Verbindungszeit p95 < 100 ms, API-Antwortzeit p95 < 50 ms, Fehlerrate 0 %.
-
----
-
-## 10. Fazit
+## C.3 Fazit
 
 Die implementierten Tests decken drei qualitativ unterschiedliche Ebenen ab:
 
-- **Unit-Ebene (`Warnings.vue`):** Die Ladeplan-Warnungslogik ist durch 9 Tests abgesichert, inklusive Boundary-Tests für die 60-Sekunden-Toleranz und beide Code-Branches (SoC- und Energie-Modus). Falsche Warnungen wären für Nutzer unsichtbar und würden Ladepläne still scheitern lassen.
+**Unit-Ebene:** Moser testet die Ladeplan-Warnungslogik mit 9 Boundary-Tests direkt an der Komponente. Kalt testet 10 Utility-Funktionen (Tarif-Slots, Forecast, Smart-Charging-Kern) mit 34 Fällen als reine Funktionen ohne Browser. Zusammen decken beide die kritischsten Berechnungen der Anwendung ab.
 
-- **Integrationsebene (Cypress CT):** Alle drei Integrationstests verwenden `Vehicle.vue` als echten Mediator und prüfen Prop-Flüsse über 3–4 Komponentengrenzen hinweg. Der `collector`-Mixin-Mechanismus, der Props automatisch an Kinder verteilt, kann nur im echten Browser verifiziert werden. Besonders der zweistufige Boost-Test (optimistisches Feedback vor Backend-Bestätigung) und der Abfahrtsplan-Test (ein `setProps()` aktualisiert zwei unabhängige Komponentenstränge gleichzeitig) sind repräsentative Integrationstests für die Vue-Reaktivitätsarchitektur von evcc.
+**Integrationsebene:** Beide nutzen Cypress CT, testen aber unterschiedliche Bereiche. Moser prüft das Zusammenspiel rund um `Vehicle.vue` (Boost-Button, MinSoc, Abfahrtsplan). Kalt prüft die Darstellungskomponenten für Tarife und Sessions (TariffChart, DateNavigator, SessionTable).
 
-- **E2E-Ebene (Playwright):** Die Kern-User-Journeys (Ladestart, Smart-Cost-Schwellenwert) werden gegen den echten evcc-Server validiert.
+**E2E-Ebene:** Mosers Tests decken den Ladestart-Flow und Smart-Cost ab. Kalts Tests decken die Ladeplanung und die Live-Daten-Anzeige ab. Zusammen ergibt sich eine breite Abdeckung der wichtigsten User-Journeys.
 
-Die Auswahl der Testbereiche folgte dem Kriterium des **höchsten Schadenspotenzials bei einem Bug**: Bereiche, in denen ein einzelner Fehler entweder alle Nutzer betrifft (Ladeplan-Warnungen, MinSoc-Ladestart) oder direkte wirtschaftliche Konsequenzen hat (Smart-Cost, Battery-Boost), wurden bevorzugt getestet.
+Die Auswahl der Testbereiche folgte dem Kriterium des **höchsten Schadenspotenzials bei einem Bug**: Bereiche, in denen ein einzelner Fehler entweder alle Nutzer betrifft oder direkte wirtschaftliche Konsequenzen hat, wurden bevorzugt getestet.
 
 ---
 
-## 11. KI-Werkzeuge
+## C.4 KI-Werkzeuge
 
-Bei der Ausarbeitung dieser Projektarbeit wurde **Claude Sonnet 4.6** (Anthropic) als KI-Assistent eingesetzt. Das KI-Werkzeug unterstützte bei der Analyse der Komponentenarchitektur, dem Entwurf der Testfälle und der Implementierung der Testdateien. Alle Tests wurden anschließend manuell verifiziert und bei Bedarf korrigiert (z. B. `{ force: true }` für von `CustomSelect` überdeckte Buttons).
+Bei der Ausarbeitung dieser Projektarbeit wurde **Claude Sonnet 4.6** (Anthropic) als KI-Assistent eingesetzt. Das KI-Werkzeug unterstützte bei der Analyse der Komponentenarchitektur, dem Entwurf der Testfälle und der Implementierung der Testdateien. Alle Tests wurden anschließend manuell verifiziert und bei Bedarf korrigiert.
