@@ -11,23 +11,25 @@ const slot = (over: any = {}) => ({
   ...over,
 });
 
-describe("TariffChart.vue – Tarif-Slot-Rendering (Cypress CT)", () => {
-  it("rendert pro Slot ein Balken-Element", () => {
+describe("TariffChart.vue – Tarif-Fenster im Browser (Cypress CT)", () => {
+  it("stellt jedes Tarif-Fenster als Balken dar", () => {
     cy.mount(TariffChart, {
-      props: { slots: [slot(), slot({ value: 0.4 }), slot({ value: 0.5 })] },
+      props: { slots: [slot({ value: 0.2 }), slot({ value: 0.4 }), slot({ value: 0.5 })] },
     });
     cy.get(".slot").should("have.length", 3);
   });
 
-  it("markiert ladende Slots mit .active", () => {
+  it("markiert das Ladefenster, in dem geladen wird, als aktiv", () => {
     cy.mount(TariffChart, {
-      props: { slots: [slot({ charging: true }), slot({ charging: false })] },
+      props: { slots: [slot({ charging: true, value: 0.2 }), slot({ charging: false, value: 0.5 })] },
     });
     cy.get(".slot.active").should("have.length", 1);
   });
 
-  it("setzt inactive-Klasse bei inactive-Prop", () => {
-    cy.mount(TariffChart, { props: { slots: [slot()], inactive: true } });
-    cy.get(".chart.inactive").should("exist");
+  it("hebt teure Fenster als Warnung hervor", () => {
+    cy.mount(TariffChart, {
+      props: { slots: [slot({ warning: true, value: 0.9 }), slot({ warning: false, value: 0.2 })] },
+    });
+    cy.get(".slot.warning").should("have.length", 1);
   });
 });

@@ -1,5 +1,7 @@
 import DateNavigator from "@/components/Sessions/DateNavigator.vue";
 
+const today = new Date();
+
 const props = (over: any = {}) => ({
   day: 15,
   month: 6,
@@ -11,26 +13,31 @@ const props = (over: any = {}) => ({
   ...over,
 });
 
-describe("DateNavigator.vue – Datums-Navigation (Cypress CT)", () => {
-  it("rendert Tages-Navigation mit Prev/Next/Datepicker", () => {
-    cy.mount(DateNavigator, { props: props() });
-    cy.get('[data-testid="navigate-prev-day"]').should("exist");
-    cy.get('[data-testid="navigate-next-day"]').should("exist");
-    cy.get('[data-testid="navigate-day"]').should("exist");
-  });
-
-  it("Prev-Tag ist am startDate deaktiviert", () => {
+describe("DateNavigator.vue – Sessions-Datumsnavigation (Cypress CT)", () => {
+  it("lässt nicht vor den ältesten Sessions zurücknavigieren", () => {
     cy.mount(DateNavigator, {
       props: props({ day: 1, month: 1, year: 2026, startDate: new Date(2026, 0, 1) }),
     });
     cy.get('[data-testid="navigate-prev-day"]').should("be.disabled");
   });
 
-  it("Klick auf Next-Tag emittiert update-date", () => {
+  it("lässt nicht in die Zukunft navigieren (heutiger Tag ist Grenze)", () => {
+    cy.mount(DateNavigator, {
+      props: props({
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: today.getFullYear(),
+        startDate: new Date(2020, 0, 1),
+      }),
+    });
+    cy.get('[data-testid="navigate-next-day"]').should("be.disabled");
+  });
+
+  it("lädt nach Tageswahl den gewählten Tag nach (update-date)", () => {
     const onUpdateDate = cy.stub().as("upd");
     cy.mount(DateNavigator, {
       props: {
-        ...props({ day: 1, month: 1, year: 2026 }),
+        ...props({ day: 1, month: 1, year: 2026, startDate: new Date(2026, 0, 1) }),
         "onUpdate-date": onUpdateDate,
         onUpdateDate,
       },

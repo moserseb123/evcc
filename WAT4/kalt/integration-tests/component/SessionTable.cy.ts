@@ -19,14 +19,14 @@ const session = (over: any = {}) => ({
   ...over,
 });
 
-describe("SessionTable.vue – Sessions-Tabelle (Cypress CT)", () => {
-  it("zeigt Leer-Zustand ohne Sessions", () => {
+describe("SessionTable.vue – Ladehistorie (Cypress CT)", () => {
+  it("zeigt einen Leer-Hinweis, wenn keine Ladevorgänge vorliegen", () => {
     cy.mount(SessionTable, { props: { sessions: [] } });
     cy.get('[data-testid="sessions-nodata"]').should("exist");
     cy.get('[data-testid="sessions-head"]').should("not.exist");
   });
 
-  it("rendert eine Zeile pro Session", () => {
+  it("listet je Ladevorgang eine Zeile auf", () => {
     cy.mount(SessionTable, { props: { sessions: [session(), session({ id: 2 })] } });
     cy.get('[data-testid="sessions-nodata"]').should("not.exist");
     cy.get('[data-testid="sessions-entry"]').should("have.length", 2);
