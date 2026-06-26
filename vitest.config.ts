@@ -11,6 +11,7 @@ export default mergeConfig(
       include: [
         "assets/**/*.{test,spec}.{js,ts}",
         "WAT4/moser/unit-tests/**/*.{test,spec}.{js,ts}",
+        "WAT4/kalt/unit-tests/**/*.{test,spec}.{js,ts}",
       ],
     },
   })

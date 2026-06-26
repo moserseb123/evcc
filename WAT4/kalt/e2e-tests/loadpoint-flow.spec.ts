@@ -38,7 +38,6 @@ test("Loadpoint erscheint mit Visualisierungs-Widget", async ({ page }) => {
 });
 
 test("Statusübergang connected → charging vollständig im UI abgebildet", async ({ page }) => {
-  // Fahrzeug verbunden, noch kein Ladevorgang aktiv
   await page.goto(simulatorUrl());
   await page.getByTestId("loadpoint0").getByText("B (connected)").click();
   await simulatorApply(page);
@@ -46,18 +45,15 @@ test("Statusübergang connected → charging vollständig im UI abgebildet", asy
   await page.goto("/");
   await expect(page.getByTestId("vehicle-status-charger")).toContainText("Connected");
 
-  // Schnell-Modus aktivieren
   const modeGroup = page.getByTestId("mode");
   const schnellButton = modeGroup.getByRole("button").last();
   await schnellButton.click();
   await expect(schnellButton).toHaveClass(/active/);
 
-  // Wallbox reagiert: Ladevorgang gestartet
   await page.goto(simulatorUrl());
   await page.getByTestId("loadpoint0").getByText("C (charging)").click();
   await simulatorApply(page);
 
-  // UI zeigt Statuswechsel und animierten Fortschrittsbalken
   await page.goto("/");
   await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging");
   await expect(page.getByTestId("loadpoint").locator(".progress-bar-animated")).toHaveCount(1);

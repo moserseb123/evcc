@@ -56,9 +56,9 @@ test("Ladeplan-Modal öffnet sich mit Zeit- und Energiefeldern", async ({ page }
 
   const modal = page.getByTestId("charging-plan-modal");
   await expect(modal).toBeVisible();
-  // Beide Eingabefelder müssen im Modal sichtbar sein
+  // Zeitfeld immer sichtbar; Zielfeld ist SoC-basiert (Fahrzeug hat SoC-Support)
   await expect(modal.getByTestId("static-plan-time")).toBeVisible();
-  await expect(modal.getByTestId("static-plan-energy")).toBeVisible();
+  await expect(modal.getByTestId("static-plan-soc")).toBeVisible();
 });
 
 test("Ladeplan-Felder sind interaktiv – Nutzer kann Zielzeit und Energie eingeben", async ({ page }) => {
@@ -77,10 +77,10 @@ test("Ladeplan-Felder sind interaktiv – Nutzer kann Zielzeit und Energie einge
   await expect(timeField).toBeVisible();
   await expect(timeField).not.toBeDisabled();
 
-  // Energiefeld: sichtbar und nicht deaktiviert → Nutzer kann Ziel-SoC / kWh eingeben
-  const energyField = modal.getByTestId("static-plan-energy");
-  await expect(energyField).toBeVisible();
-  await expect(energyField).not.toBeDisabled();
+  // Zielfeld (SoC): sichtbar und nicht deaktiviert → Nutzer kann Ladeziel wählen
+  const socField = modal.getByTestId("static-plan-soc");
+  await expect(socField).toBeVisible();
+  await expect(socField).not.toBeDisabled();
 });
 
 test("Ladeplan-Modal kann ohne Fehler geschlossen werden", async ({ page }) => {
@@ -94,8 +94,8 @@ test("Ladeplan-Modal kann ohne Fehler geschlossen werden", async ({ page }) => {
   const modal = page.getByTestId("charging-plan-modal");
   await expect(modal).toBeVisible();
 
-  // Escape schließt das Modal – kein Fehler, kein Seiten-Reload
-  await page.keyboard.press("Escape");
+  // Close-Button schließt das Modal – kein Fehler, kein Seiten-Reload
+  await modal.locator(".btn-close").click();
   await expect(modal).not.toBeVisible();
 
   // Hauptseite noch immer intakt: Loadpoint nach Modal-Schließen sichtbar

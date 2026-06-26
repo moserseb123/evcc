@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, test, expect } from "vitest";
 import { getOcppUrl, getOcppUrlWithStationId } from "@/utils/ocpp";
 

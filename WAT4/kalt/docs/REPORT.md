@@ -15,14 +15,14 @@ Für meine Tests sind vor allem drei Bereiche relevant:
 
 Insgesamt sind es 34 Testfälle: 15 Unit, 12 Integration, 6 E2E und 1 Lasttest. Das Minimum von 11 ist damit deutlich übererfüllt.
 
-## 3. Unit-Tests (Jest)
+## 3. Unit-Tests (Vitest)
 
-Vier Dateien mit zusammen 20 Fällen. Thematisch konsolidiert, auf die wichtigsten Tests reduziert – je Datei alle verwandten Funktionen eines Moduls, mit Fokus auf die fachlich kritischen Pfade und Grenzwerte. Framework: Vitest (Projekt-Standard, wie Moser).
+Vier Dateien mit zusammen 15 Fällen. Thematisch konsolidiert, auf die wichtigsten Tests reduziert – je Datei alle verwandten Funktionen eines Moduls, mit Fokus auf die fachlich kritischen Pfade und Grenzwerte. Framework: Vitest (Projekt-Standard, wie Moser).
 
 - `forecast.test.ts` (5 Fälle) – drei Kernfunktionen der Forecast-Logik: `findLowestSumSlotIndex` (günstigstes Ladefenster; Off-by-one verschiebt das Fenster und kostet den Nutzer direkt Geld), `isStaticTariff` (statisch vs. dynamisch; steuert ob Smart-Planung eingeblendet wird), `adjustedSolar` (PV-Prognose-Skalierung inkl. Deep-Copy-Verifikation).
 - `tariffSlots.test.ts` (5 Fälle) – drei Kernfunktionen des Tarifsystems: `calculateCostRange` (min/max, ignoriert undefined-Slots), `findRateInRange` (trifft Tarif / undefined außerhalb), `generateRateSlots` (15-Minuten-Exaktheit, selectable spiegelt value).
 - `ocpp.test.ts` (3 Fälle) – URL-Generierung: externalUrl hat Priorität, Fallback aus hostname + Port, `<stationId>`-Platzhalter. Falsche URL = Wallbox unerreichbar.
-- `remote.test.ts` (2 Fälle) – `isRemoteClientActive`: kein Eintrag, klar aktiv (2 min), klar inaktiv (10 min), exakter Grenzwert (5 min = inaktiv). Sicherheitsrelevant.
+- `remote.test.ts` (2 Fälle) – `isRemoteClientActive`: klar aktiv (2 min), exakter Grenzwert (5 min = inaktiv). Sicherheitsrelevant.
 
 Es sind durchweg reine Funktionen mit klaren Verzweigungen und Randfällen – genau dort steckt die Aussagekraft.
 
@@ -34,7 +34,7 @@ Drei Komponenten, 12 Fälle:
 
 - `TariffChart` (4 Fälle) – alle Tarif-Fenster als Balken; aktives Ladefenster erhält `.active` / kein `.active` wenn kein Ladevorgang; teure Fenster erhalten `.warning` / kein `.warning` bei günstigen Preisen. Nötig, weil der Nutzer daran abliest wann Laden teuer oder günstig ist; falsche Markierungen führen zu falschen Ladeentscheidungen. Beide Richtungen (positiv + negativ) werden getestet.
 - `DateNavigator` (4 Fälle) – Zurück-Button deaktiviert an ältester Session; Weiter-Button deaktiviert heute / aktiv bei Spielraum; Vorwärts- und Rückwärts-Klick emittieren `update-date` Event. Nötig, weil die Grenzen den verfügbaren Datenbereich abbilden und das Event die Kernfunktion ist – ohne es werden keine Sessions nachgeladen.
-- `SessionTable` (4 Fälle) – Leer-Hinweis ohne Sessions; korrekte Zeilenanzahl; Reihenfolge wie Eingabe; Fahrzeugname und Ladepunkt je Zeile; geladene Energie; Solar-Prozentsatz. Nötig, weil das die Ladehistorie ist; falsche oder fehlende Werte führen direkt zu Abrechnungsstreitigkeiten.
+- `SessionTable` (4 Fälle) – Leer-Hinweis ohne Sessions; korrekte Zeilenanzahl (inkl. Tabellenkopf); Fahrzeugname und Ladepunkt je Zeile; Reihenfolge entspricht Eingabe. Nötig, weil das die Ladehistorie ist; falsche oder fehlende Einträge führen direkt zu Abrechnungsstreitigkeiten.
 
 Component Testing ist hier sinnvoll, weil es das Zusammenspiel aus Komponente, Props, Unterkomponenten und Formattern im echten Browser prüft – stabiler und schneller als ein voller E2E-Test, aber realer als ein reiner Unit-Test.
 
@@ -42,7 +42,7 @@ Component Testing ist hier sinnvoll, weil es das Zusammenspiel aus Komponente, P
 
 Die E2E-Tests laufen im echten Browser gegen ein gebootetes evcc mit Simulator-Backend (`startSimulator` + `simulatorConfig`). Vor jedem Test werden Simulator und Server gestartet, danach wieder gestoppt. Zwei Flows mit sechs Fällen – mit echten Statusübergängen über den Simulator:
 
-- `charge-plan-flow` (4 Fälle) – der fachliche Ladeplan-Workflow: Simulator setzt Fahrzeug auf connected → Ladeplan-Button erscheint und ist klickbar. Klick öffnet Modal mit Zeit- und Energiefeldern. Beide Felder sind nicht deaktiviert (Nutzer kann Eingaben machen). Escape schließt das Modal ohne Fehler, Hauptseite bleibt intakt. Nötig, weil die Ladeplanung der zentrale Smart-Charging-Workflow ist und dieser komplette Pfad – realer Verbindungsstatus, Klick, Modal, Felder, Schließen – von keinem anderen Test abgedeckt wird.
+- `charge-plan-flow` (4 Fälle) – der fachliche Ladeplan-Workflow: Simulator setzt Fahrzeug auf connected → Ladeplan-Button erscheint und ist klickbar. Klick öffnet Modal mit Zeit- und Energiefeldern. Zeitfeld und SoC-Zielfeld sind sichtbar und nicht deaktiviert (Nutzer kann Eingaben machen). Close-Button schließt das Modal ohne Fehler, Hauptseite bleibt intakt. Nötig, weil die Ladeplanung der zentrale Smart-Charging-Workflow ist und dieser komplette Pfad – realer Verbindungsstatus, Klick, Modal, Felder, Schließen – von keinem anderen Test abgedeckt wird.
 - `loadpoint-flow` (2 Fälle) – Grundansicht und Statusübergang connected → charging: Loadpoint mit Visualisierungs-Widget sichtbar. Simulator auf B (connected) → UI zeigt „Connected". Schnell-Modus aktivieren, Simulator auf C (charging) → UI zeigt „Charging" und animierter Fortschrittsbalken. Nötig, weil dieser Test den vollständigen Ladevorgang-Workflow im echten Browser mit echtem Simulator-Statusübergang validiert.
 
 ## 6. Lasttest (k6)

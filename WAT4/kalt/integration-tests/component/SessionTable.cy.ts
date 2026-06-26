@@ -37,7 +37,6 @@ const session = (over: any = {}) => ({
 describe("SessionTable.vue – Ladehistorie", () => {
   it("zeigt Leer-Hinweis wenn keine Ladevorgänge vorliegen", () => {
     cy.mount(SessionTable, { props: { sessions: [] } });
-    // Leer-Hinweis sichtbar, kein Kopf, keine Zeilen
     cy.get('[data-testid="sessions-nodata"]').should("exist").and("be.visible");
     cy.get('[data-testid="sessions-head"]').should("not.exist");
     cy.get('[data-testid="sessions-entry"]').should("not.exist");
@@ -45,7 +44,6 @@ describe("SessionTable.vue – Ladehistorie", () => {
 
   it("listet je Ladevorgang exakt eine Zeile auf", () => {
     cy.mount(SessionTable, { props: { sessions: [session(), session({ id: 2 })] } });
-    // Leer-Hinweis verschwindet, Kopf erscheint, exakt 2 Zeilen sichtbar
     cy.get('[data-testid="sessions-nodata"]').should("not.exist");
     cy.get('[data-testid="sessions-head"]').should("exist");
     cy.get('[data-testid="sessions-entry"]').should("have.length", 2).and("be.visible");
@@ -55,7 +53,6 @@ describe("SessionTable.vue – Ladehistorie", () => {
     cy.mount(SessionTable, {
       props: { sessions: [session({ vehicle: "Tesla Model 3", loadpoint: "Garage" })] },
     });
-    // Exakt eine Zeile, beide Felder darin vorhanden
     cy.get('[data-testid="sessions-entry"]').should("have.length", 1).first().within(() => {
       cy.contains("Tesla Model 3").should("exist");
       cy.contains("Garage").should("exist");
@@ -67,7 +64,6 @@ describe("SessionTable.vue – Ladehistorie", () => {
     const s2 = session({ id: 2, vehicle: "VW ID.4" });
     cy.mount(SessionTable, { props: { sessions: [s1, s2] } });
     cy.get('[data-testid="sessions-entry"]').should("have.length", 2);
-    // Reihenfolge: erste Zeile Audi, zweite VW – wie in Props übergeben
     cy.get('[data-testid="sessions-entry"]').eq(0).should("contain.text", "Audi e-tron").and("be.visible");
     cy.get('[data-testid="sessions-entry"]').eq(1).should("contain.text", "VW ID.4").and("be.visible");
   });
