@@ -41,11 +41,11 @@ export default defineConfig({
       });
     },
     specPattern: [
-      "WAT4/integration-tests/component/**/*.cy.{ts,tsx,js}",
+      "WAT4/moser/integration-tests/component/**/*.cy.{ts,tsx,js}",
       "WAT4/kalt/integration-tests/component/**/*.cy.{ts,tsx,js}",
     ],
-    supportFile: "WAT4/integration-tests/cypress-support/component.ts",
-    indexHtmlFile: "WAT4/integration-tests/cypress-support/component-index.html",
+    supportFile: "WAT4/moser/integration-tests/cypress-support/component.ts",
+    indexHtmlFile: "WAT4/moser/integration-tests/cypress-support/component-index.html",
     viewportWidth: 1280,
     viewportHeight: 800,
   },

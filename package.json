@@ -17,7 +17,7 @@
     "test:cypress": "cypress run --component",
     "test:cypress:open": "cypress open --component",
     "test:cypress:open:slow": "cross-env CYPRESS_slowMode=1 cypress open --component",
-    "test:load": "k6 run WAT4/load-tests/websocket-load.js",
+    "test:load": "k6 run WAT4/moser/load-tests/websocket-load.js",
     "simulator": "vite tests/simulator",
     "storybook": "storybook dev -p 6006",
     "license": "license-compliance --production --report detailed --allow \"MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD\""

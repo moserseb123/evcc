@@ -10,7 +10,7 @@ export default mergeConfig(
       environment: "happy-dom",
       include: [
         "assets/**/*.{test,spec}.{js,ts}",
-        "WAT4/unit-tests/**/*.{test,spec}.{js,ts}",
+        "WAT4/moser/unit-tests/**/*.{test,spec}.{js,ts}",
       ],
     },
   })

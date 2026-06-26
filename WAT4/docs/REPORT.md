@@ -21,7 +21,6 @@ Das System ist als Heimserver konzipiert und wird auf einem lokalen Rechner (Ras
 |---------|-------------|
 | Frontend | Vue 3.5 (Composition API + Options API), TypeScript, Bootstrap 5 |
 | Build | Vite 8, Vitest 4.1, vue-tsc |
-| State | Reaktiver Singleton `store.ts` – einziger WebSocket-Eintrittspunkt |
 | Backend | Go (nicht Bestandteil dieser Tests) |
 | Kommunikation | WebSocket (Echtzeit-State) + REST-API (Nutzeraktionen) |
 
@@ -249,7 +248,7 @@ evcc basiert vollständig auf WebSocket für Echtzeit-Updates – ohne funktioni
 
 ---
 
-# Teil B – Lukas Kalt
+# Teil B – Sebastian Kaltenegger
 
 ---
 
@@ -343,10 +342,11 @@ npm run test:cypress:open   # Interaktiver Browser-Modus
 
 # E2E-Tests (Playwright) – erfordert laufenden evcc-Server
 go run . --config tests/simulator.evcc.yaml &
-npx playwright test WAT4/e2e-tests/
+npx playwright test WAT4/moser/e2e-tests/
 npx playwright test WAT4/kalt/e2e-tests/
 
 # Lasttests (k6)
+go run . --config tests/basics.evcc.yaml
 npm run test:load
 k6 run WAT4/kalt/load-tests/sessions-load.js
 ```

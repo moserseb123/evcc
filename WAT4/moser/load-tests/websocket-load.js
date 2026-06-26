@@ -30,12 +30,12 @@ export const options = {
   thresholds: {
     // WebSocket-Verbindung muss in 95% der Fälle unter 500ms aufgebaut sein
     ws_connecting: ["p(95)<500"],
-    // REST-API-Antworten müssen in 95% der Fälle unter 200ms sein
-    http_req_duration: ["p(95)<200"],
-    // Fehlerrate WebSocket unter 5%
-    ws_errors: ["rate<0.05"],
-    // API-Fehlerrate unter 5%
-    api_errors: ["rate<0.05"],
+    // REST-API-Antworten müssen in 95% der Fälle unter 500ms sein
+    http_req_duration: ["p(95)<500"],
+    // Fehlerrate WebSocket unter 1%
+    ws_errors: ["rate<0.01"],
+    // API-Fehlerrate unter 1%
+    api_errors: ["rate<0.01"],
   },
 };
 

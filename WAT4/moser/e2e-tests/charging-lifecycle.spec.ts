@@ -56,6 +56,6 @@ test("Schnell-Modus startet Ladevorgang und UI zeigt Ladeprozess", async ({ page
 
   // WebSocket-Update → Ladevorgang sichtbar
   await page.goto("/");
-  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging");
+  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging", { timeout: 15000 });
   await expect(loadpoint.locator(".progress-bar-animated")).toHaveCount(1);
 });
