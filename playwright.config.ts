@@ -4,15 +4,9 @@ import { defineConfig, devices } from "@playwright/test";
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: ".",
-  testMatch: [
-    "tests/**/*.spec.ts",
-    "WAT4/e2e-tests/**/*.spec.ts",
-    "WAT4/kalt/e2e-tests/**/*.spec.ts",
-  ],
+  timeout: 60000, // 60s
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 4 : 0,
-  timeout: 60000, // 60s
   reporter: [[process.env.CI ? "github" : "list"], ["html", { open: "never" }]],
   use: {
     baseURL: "http://127.0.0.1:7070",
@@ -25,6 +19,20 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testDir: ".",
+      testMatch: [
+        "tests/**/*.spec.ts",
+        "WAT4/kalt/e2e-tests/**/*.spec.ts",
+      ],
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1400, height: 1400 },
+      },
+    },
+    {
+      name: "chromium-moser",
+      testDir: "WAT4/moser/e2e-tests",
+      testMatch: "**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1400, height: 1400 },

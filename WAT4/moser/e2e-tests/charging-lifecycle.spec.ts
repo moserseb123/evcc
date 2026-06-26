@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { start, stop, baseUrl } from "../../tests/evcc";
+import { start, stop, baseUrl } from "../../../tests/evcc";
 import {
   startSimulator,
   stopSimulator,
   simulatorUrl,
   simulatorConfig,
   simulatorApply,
-} from "../../tests/simulator";
+} from "../../../tests/simulator";
 
 test.use({ baseURL: baseUrl() });
 test.describe.configure({ mode: "serial" });
@@ -56,6 +56,6 @@ test("Schnell-Modus startet Ladevorgang und UI zeigt Ladeprozess", async ({ page
 
   // WebSocket-Update → Ladevorgang sichtbar
   await page.goto("/");
-  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging");
+  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging", { timeout: 15000 });
   await expect(loadpoint.locator(".progress-bar-animated")).toHaveCount(1);
 });

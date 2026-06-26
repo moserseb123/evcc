@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { start, stop, baseUrl } from "../../tests/evcc";
+import { start, stop, baseUrl } from "../../../tests/evcc";
 import {
   startSimulator,
   stopSimulator,
   simulatorUrl,
   simulatorConfig,
   simulatorApply,
-} from "../../tests/simulator";
-import { expectModalHidden, expectModalVisible } from "../../tests/utils";
+} from "../../../tests/simulator";
+import { expectModalHidden, expectModalVisible } from "../../../tests/utils";
 
 test.use({ baseURL: baseUrl() });
 test.describe.configure({ mode: "serial" });
