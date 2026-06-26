@@ -40,7 +40,10 @@ test("Ladeplan-Button erscheint wenn Fahrzeug verbunden", async ({ page }) => {
   await simulatorApply(page);
 
   await page.goto("/");
-  await expect(page.getByTestId("charging-plan-button").first()).toBeVisible();
+  // Button muss sichtbar und klickbar sein – nicht deaktiviert
+  const btn = page.getByTestId("charging-plan-button").first();
+  await expect(btn).toBeVisible();
+  await expect(btn).not.toBeDisabled();
 });
 
 test("Ladeplan-Modal öffnet sich mit Zeit- und Energiefeldern", async ({ page }) => {
@@ -53,7 +56,49 @@ test("Ladeplan-Modal öffnet sich mit Zeit- und Energiefeldern", async ({ page }
 
   const modal = page.getByTestId("charging-plan-modal");
   await expect(modal).toBeVisible();
+  // Beide Eingabefelder müssen im Modal sichtbar sein
   await expect(modal.getByTestId("static-plan-time")).toBeVisible();
   await expect(modal.getByTestId("static-plan-energy")).toBeVisible();
+});
+
+test("Ladeplan-Felder sind interaktiv – Nutzer kann Zielzeit und Energie eingeben", async ({ page }) => {
+  await page.goto(simulatorUrl());
+  await page.getByTestId("loadpoint0").getByText("B (connected)").click();
+  await simulatorApply(page);
+
+  await page.goto("/");
+  await page.getByTestId("charging-plan-button").first().click();
+
+  const modal = page.getByTestId("charging-plan-modal");
+  await expect(modal).toBeVisible();
+
+  // Zeitfeld: sichtbar und nicht deaktiviert → Nutzer kann Zielzeit wählen
+  const timeField = modal.getByTestId("static-plan-time");
+  await expect(timeField).toBeVisible();
+  await expect(timeField).not.toBeDisabled();
+
+  // Energiefeld: sichtbar und nicht deaktiviert → Nutzer kann Ziel-SoC / kWh eingeben
+  const energyField = modal.getByTestId("static-plan-energy");
+  await expect(energyField).toBeVisible();
+  await expect(energyField).not.toBeDisabled();
+});
+
+test("Ladeplan-Modal kann ohne Fehler geschlossen werden", async ({ page }) => {
+  await page.goto(simulatorUrl());
+  await page.getByTestId("loadpoint0").getByText("B (connected)").click();
+  await simulatorApply(page);
+
+  await page.goto("/");
+  await page.getByTestId("charging-plan-button").first().click();
+
+  const modal = page.getByTestId("charging-plan-modal");
+  await expect(modal).toBeVisible();
+
+  // Escape schließt das Modal – kein Fehler, kein Seiten-Reload
+  await page.keyboard.press("Escape");
+  await expect(modal).not.toBeVisible();
+
+  // Hauptseite noch immer intakt: Loadpoint nach Modal-Schließen sichtbar
+  await expect(page.getByTestId("loadpoint")).toBeVisible();
 });
 

@@ -31,7 +31,9 @@ describe("TariffChart.vue – Tarif-Fenster-Visualisierung", () => {
     cy.mount(TariffChart, {
       props: { slots: [slot({ value: 0.2 }), slot({ value: 0.4 }), slot({ value: 0.5 })] },
     });
-    cy.get(".slot").should("have.length", 3);
+    // Genau 3 Balken, alle sichtbar, keiner davon fälschlicherweise aktiv
+    cy.get(".slot").should("have.length", 3).and("be.visible");
+    cy.get(".slot.active").should("not.exist");
   });
 
   it("markiert das aktive Ladefenster als .active", () => {
@@ -40,7 +42,8 @@ describe("TariffChart.vue – Tarif-Fenster-Visualisierung", () => {
         slots: [slot({ charging: true, value: 0.2 }), slot({ charging: false, value: 0.5 })],
       },
     });
-    cy.get(".slot.active").should("have.length", 1);
+    // Exakt ein .active (der ladende Slot), der andere bleibt neutral
+    cy.get(".slot.active").should("have.length", 1).and("be.visible");
     cy.get(".slot:not(.active)").should("have.length", 1);
   });
 
@@ -50,6 +53,8 @@ describe("TariffChart.vue – Tarif-Fenster-Visualisierung", () => {
         slots: [slot({ charging: false }), slot({ charging: false })],
       },
     });
+    // Beide Slots gerendert, keiner erhält .active
+    cy.get(".slot").should("have.length", 2);
     cy.get(".slot.active").should("not.exist");
   });
 
@@ -59,7 +64,8 @@ describe("TariffChart.vue – Tarif-Fenster-Visualisierung", () => {
         slots: [slot({ warning: true, value: 0.9 }), slot({ warning: false, value: 0.2 })],
       },
     });
-    cy.get(".slot.warning").should("have.length", 1);
+    // Exakt ein .warning (der teure Slot), der günstige bleibt neutral
+    cy.get(".slot.warning").should("have.length", 1).and("be.visible");
     cy.get(".slot:not(.warning)").should("have.length", 1);
   });
 

@@ -20,6 +20,8 @@ import { Rate, Trend } from "k6/metrics";
 const wsErrorRate = new Rate("ws_errors");
 const apiErrorRate = new Rate("api_errors");
 const wsMessageLatency = new Trend("ws_message_latency_ms");
+// Zeit vom WS-Connect bis erste Nachricht – misst wie schnell evcc State-Push liefert
+const wsConnectTime = new Trend("ws_connect_time_ms");
 
 const BASE_URL = __ENV.BASE_URL || "http://127.0.0.1:7070";
 const WS_URL = BASE_URL.replace("http://", "ws://").replace("https://", "wss://") + "/ws";
@@ -40,16 +42,18 @@ export const options = {
     ws_errors: ["rate<0.05"],
     // API-Fehlerrate unter 5%
     api_errors: ["rate<0.05"],
+    // Zeit bis erster WS-State-Push in 95% der Fälle unter 1000ms
+    ws_connect_time_ms: ["p(95)<1000"],
   },
 };
 
 /**
- * Jeder VU simuliert einen Browser-Tab:
- * - REST: System-Status und Tarifdaten abrufen (wie beim App-Start)
- * - WebSocket: Verbindung halten und auf Live-State-Updates warten (wie die evcc-UI)
+ * Jeder VU simuliert einen Browser-Tab beim App-Start:
+ * - REST: System-Status, Tarifdaten und Ladepunkte abrufen (wie beim App-Start der evcc-UI)
+ * - WebSocket: Verbindung halten und auf Live-State-Updates warten (wie die evcc-UI im Betrieb)
  */
 export default function () {
-  // 1. REST: Aktuellen System-Status abrufen
+  // 1. REST: Aktuellen System-Status abrufen (erster Request beim App-Start)
   const stateRes = http.get(`${BASE_URL}/api/state`);
   const stateOk = check(stateRes, {
     "GET /api/state: Status 200": (r) => r.status === 200,
@@ -71,16 +75,35 @@ export default function () {
   });
   apiErrorRate.add(!tariffOk);
 
-  // 3. WebSocket: Live-Verbindung für Echtzeit-State-Updates
+  // 3. REST: Ladepunkte abrufen (UI zeigt je Loadpoint Karte + Status)
+  const loadpointsRes = http.get(`${BASE_URL}/api/loadpoints`);
+  const loadpointsOk = check(loadpointsRes, {
+    "GET /api/loadpoints: Status 200": (r) => r.status === 200,
+    "GET /api/loadpoints: Antwort ist Array": (r) => {
+      try {
+        return Array.isArray(JSON.parse(r.body));
+      } catch {
+        return false;
+      }
+    },
+  });
+  apiErrorRate.add(!loadpointsOk);
+
+  // 4. WebSocket: Live-Verbindung für Echtzeit-State-Updates
+  const connectStart = Date.now();
   const wsResponse = ws.connect(WS_URL, {}, function (socket) {
     let messageCount = 0;
-    const connectTime = Date.now();
+
+    socket.on("open", () => {
+      // Zeit von connect() bis Socket bereit – Verbindungsaufbau-Latenz
+      wsConnectTime.add(Date.now() - connectStart);
+    });
 
     socket.on("message", (data) => {
       messageCount++;
-      // Latenz bis zur ersten Nachricht messen (Zeit bis erstes State-Update)
+      // Latenz bis zur ersten Nachricht messen (Zeit bis erstes State-Update nach Open)
       if (messageCount === 1) {
-        wsMessageLatency.add(Date.now() - connectTime);
+        wsMessageLatency.add(Date.now() - connectStart);
       }
       check(data, {
         "WS-Nachricht ist gültiges JSON": (d) => {

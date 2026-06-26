@@ -13,7 +13,7 @@ Für meine Tests sind vor allem drei Bereiche relevant:
 - E2E: Playwright gegen ein echtes, gebootetes evcc mit eigener Fixture
 - Last: k6, weil es genau für Lasterzeugung gebaut ist (wenig Overhead pro virtuellem Nutzer, native Thresholds)
 
-Insgesamt sind es 32 Testfälle: 15 Unit, 12 Integration, 4 E2E und 1 Lasttest. Das Minimum von 11 ist damit deutlich übererfüllt.
+Insgesamt sind es 34 Testfälle: 15 Unit, 12 Integration, 6 E2E und 1 Lasttest. Das Minimum von 11 ist damit deutlich übererfüllt.
 
 ## 3. Unit-Tests (Jest)
 
@@ -40,16 +40,16 @@ Component Testing ist hier sinnvoll, weil es das Zusammenspiel aus Komponente, P
 
 ## 5. End-to-End-Tests (Playwright)
 
-Die E2E-Tests laufen im echten Browser gegen ein gebootetes evcc mit Simulator-Backend (`startSimulator` + `simulatorConfig`). Vor jedem Test werden Simulator und Server gestartet, danach wieder gestoppt. Zwei Flows mit vier Fällen – mit echten Statusübergängen über den Simulator:
+Die E2E-Tests laufen im echten Browser gegen ein gebootetes evcc mit Simulator-Backend (`startSimulator` + `simulatorConfig`). Vor jedem Test werden Simulator und Server gestartet, danach wieder gestoppt. Zwei Flows mit sechs Fällen – mit echten Statusübergängen über den Simulator:
 
-- `charge-plan-flow` (2 Fälle) – der fachliche Ladeplan-Workflow: Simulator setzt Fahrzeug auf connected → Ladeplan-Button erscheint. Modal öffnet mit Zeit- und Energiefeldern. Modal schließt via Escape ohne Fehler. Nötig, weil die Ladeplanung der zentrale Smart-Charging-Workflow ist und dieser komplette Pfad – realer Verbindungsstatus, Klick, Modal, Schließen – von keinem anderen Test abgedeckt wird.
+- `charge-plan-flow` (4 Fälle) – der fachliche Ladeplan-Workflow: Simulator setzt Fahrzeug auf connected → Ladeplan-Button erscheint und ist klickbar. Klick öffnet Modal mit Zeit- und Energiefeldern. Beide Felder sind nicht deaktiviert (Nutzer kann Eingaben machen). Escape schließt das Modal ohne Fehler, Hauptseite bleibt intakt. Nötig, weil die Ladeplanung der zentrale Smart-Charging-Workflow ist und dieser komplette Pfad – realer Verbindungsstatus, Klick, Modal, Felder, Schließen – von keinem anderen Test abgedeckt wird.
 - `loadpoint-flow` (2 Fälle) – Grundansicht und Statusübergang connected → charging: Loadpoint mit Visualisierungs-Widget sichtbar. Simulator auf B (connected) → UI zeigt „Connected". Schnell-Modus aktivieren, Simulator auf C (charging) → UI zeigt „Charging" und animierter Fortschrittsbalken. Nötig, weil dieser Test den vollständigen Ladevorgang-Workflow im echten Browser mit echtem Simulator-Statusübergang validiert.
 
 ## 6. Lasttest (k6)
 
-Der Lasttest (`sessions-load.js`) testet REST + WebSocket unter paralleler Last: `/api/state` (System-Status), `/api/tariff/grid` (Tarifdaten) und WebSocket `/ws` (Live-Updates). Nötig, weil ein Ausfall dieser Pfade unter Last alle Nutzer gleichzeitig falsche Ladeentscheidungen treffen lässt – Tarifdaten und State-Updates sind zeitkritisch und dürfen auch unter Peak-Last nicht ausfallen.
+Der Lasttest (`sessions-load.js`) testet REST + WebSocket unter paralleler Last: `/api/state` (System-Status), `/api/tariff/grid` (Tarifdaten), `/api/loadpoints` (Ladepunkte) und WebSocket `/ws` (Live-Updates). Nötig, weil ein Ausfall dieser Pfade unter Last alle Nutzer gleichzeitig falsche Ladeentscheidungen treffen lässt – Tarifdaten und State-Updates sind zeitkritisch und dürfen auch unter Peak-Last nicht ausfallen.
 
-Jeder virtuelle User simuliert einen Browser-Tab: REST-Abruf bei App-Start, dann WebSocket-Verbindung für 5 Sekunden offen halten. Custom Metrics messen WebSocket-Fehlerrate (`ws_errors`), API-Fehlerrate (`api_errors`) und Latenz bis zur ersten WS-Nachricht (`ws_message_latency_ms`). Das Lastprofil: 15 s Ramp-up auf 5 VU, 30 s auf 10 VU, 20 s Spitze auf 20 VU, 10 s Ramp-down. Thresholds: HTTP p95 unter 200 ms, WS-Verbindungsaufbau p95 unter 500 ms, beide Fehlerraten unter 5 %.
+Jeder virtuelle User simuliert einen Browser-Tab beim App-Start: drei REST-Abrufe (Status, Tarif, Ladepunkte), dann WebSocket-Verbindung für 5 Sekunden offen halten. Custom Metrics: `ws_errors` (Rate), `api_errors` (Rate), `ws_message_latency_ms` (Trend bis erste WS-Nachricht), `ws_connect_time_ms` (Trend bis Socket-Open). Das Lastprofil: 15 s Ramp-up auf 5 VU, 30 s auf 10 VU, 20 s Spitze auf 20 VU, 10 s Ramp-down. Thresholds: HTTP p95 unter 200 ms, WS-Verbindungsaufbau p95 unter 500 ms, WS-State-Push p95 unter 1000 ms, beide Fehlerraten unter 5 %.
 
 ## 7. Isolation
 

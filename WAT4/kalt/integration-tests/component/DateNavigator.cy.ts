@@ -34,7 +34,9 @@ describe("DateNavigator.vue – Datumsnavigation Ladehistorie", () => {
     cy.mount(DateNavigator, {
       props: props({ day: 1, month: 1, year: 2026, startDate: new Date(2026, 0, 1) }),
     });
+    // Am frühesten Tag: zurück deaktiviert, vorwärts noch aktiv
     cy.get('[data-testid="navigate-prev-day"]').should("be.disabled");
+    cy.get('[data-testid="navigate-next-day"]').should("not.be.disabled");
   });
 
   it("deaktiviert Vor-Button am heutigen Tag (keine zukünftigen Sessions)", () => {
@@ -46,7 +48,9 @@ describe("DateNavigator.vue – Datumsnavigation Ladehistorie", () => {
         startDate: new Date(2020, 0, 1),
       }),
     });
+    // Am heutigen Tag: vorwärts deaktiviert, zurück noch aktiv (Daten seit 2020)
     cy.get('[data-testid="navigate-next-day"]').should("be.disabled");
+    cy.get('[data-testid="navigate-prev-day"]').should("not.be.disabled");
   });
 
   it("Vorwärts-Klick emittiert update-date Event", () => {
@@ -58,7 +62,8 @@ describe("DateNavigator.vue – Datumsnavigation Ladehistorie", () => {
         onUpdateDate,
       },
     });
-    cy.get('[data-testid="navigate-next-day"]').click({ force: true });
+    // Vor-Button muss klickbar sein (nicht deaktiviert), Event wird ausgelöst
+    cy.get('[data-testid="navigate-next-day"]').should("not.be.disabled").click({ force: true });
     cy.get("@upd").should("have.been.called");
   });
 
@@ -71,7 +76,8 @@ describe("DateNavigator.vue – Datumsnavigation Ladehistorie", () => {
         onUpdateDate,
       },
     });
-    cy.get('[data-testid="navigate-prev-day"]').click({ force: true });
+    // Zurück-Button muss klickbar sein (nicht deaktiviert), Event wird ausgelöst
+    cy.get('[data-testid="navigate-prev-day"]').should("not.be.disabled").click({ force: true });
     cy.get("@upd").should("have.been.called");
   });
 });
