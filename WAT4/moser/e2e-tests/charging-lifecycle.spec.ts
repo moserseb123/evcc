@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { start, stop, baseUrl } from "../../tests/evcc";
+import { start, stop, baseUrl } from "../../../tests/evcc";
 import {
   startSimulator,
   stopSimulator,
   simulatorUrl,
   simulatorConfig,
   simulatorApply,
-} from "../../tests/simulator";
+} from "../../../tests/simulator";
 
 test.use({ baseURL: baseUrl() });
 test.describe.configure({ mode: "serial" });
