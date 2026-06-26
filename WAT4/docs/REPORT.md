@@ -1,7 +1,7 @@
 # WAT4 Projektarbeit – Testbericht
 
 **Modul:** WAT4 – Qualitätssicherung und Testen
-**Datum:** 24. Juni 2026
+**Datum:** 26. Juni 2026
 **Bearbeiter:** Sebastian Moser
 **Abgabe:** 27. Juni 2026
 
@@ -13,14 +13,14 @@
 
 **evcc** (EV Charging Control) ist ein quelloffenes Energiemanagementsystem für Elektrofahrzeuge. Es steuert Wallboxen, Photovoltaikanlagen, Hausspeicher und dynamische Stromtarife so, dass Elektrofahrzeuge möglichst günstig und solar geladen werden.
 
-Das System ist als Heimserver konzipiert und wird auf einem lokalen Rechner (Raspberry Pi, NAS o. Ä.) betrieben. Die Benutzeroberfläche läuft im Browser und kommuniziert ausschließlich über **WebSocket** mit dem Backend.
+Das System ist als Heimserver konzipiert und wird auf einem lokalen Rechner (Raspberry Pi, NAS o. Ä.) betrieben. Die Benutzeroberfläche läuft im Browser und kommuniziert über **WebSocket** und **REST** mit dem Backend.
 
 ### Technologie-Stack
 
 | Schicht | Technologie |
 |---------|-------------|
 | Frontend | Vue 3.5 (Composition API + Options API), TypeScript, Bootstrap 5 |
-| Build | Vite 8, vitest 4.1, vue-tsc |
+| Build | Vite 8, Vitest 4.1, vue-tsc |
 | State | Reaktiver Singleton `store.ts` – einziger WebSocket-Eintrittspunkt |
 | Backend | Go (nicht Bestandteil dieser Tests) |
 | Kommunikation | WebSocket (Echtzeit-State) + REST-API (Nutzeraktionen) |
@@ -43,10 +43,11 @@ Browser
 **Wichtige Komponenten:**
 
 - **`store.ts`** – Einziger Eintrittspunkt für alle WebSocket-Nachrichten. Verwaltet den globalen reaktiven Zustand via `setProperty()` mit Dot-Notation-Pfaden (z. B. `"loadpoints.0.chargePower"`).
-- **`uiLoadpoints.ts`** – Leitet aus dem Roh-State alle UI-relevanten Werte ab: SoC-Verfügbarkeit, Reichweite, Ladeplanung.
-- **`Mode.vue`** – Primäre Nutzerinteraktion: Wahl zwischen OFF / PV / MinPV / NOW.
-- **`BatteryBoostButton.vue`** – Sicherheitskritische Komponente: steuert temporären Batterie-Boost mit Grenzwert-Logik.
-- **`LimitSocSelect.vue`** – Wichtigste Einstellung für EV-Nutzer: Ladegrenze in Prozent.
+- **`Vehicle.vue`** – Zentraler State-Mediator: leitet Props via `collectProps()` automatisch an alle Kinder-Komponenten weiter (VehicleStatus, VehicleSoc, LimitSocSelect, ChargingPlan, BatteryBoostButton).
+- **`VehicleStatus`** – Berechnet Lade-Statustexte und Statusbadges reaktiv aus Props (minSoc, planActive, charging, etc.).
+- **`ChargingPlan.vue`** – Abfahrtsplan-Visualisierung: zeigt Abfahrtszeit und Ziel-SoC im Plan-Button.
+- **`BatteryBoostButton.vue`** – Sicherheitskritische Komponente: steuert temporären Batterie-Boost mit Grenzwert-Logik und optimistischem UI-Feedback.
+- **`Warnings.vue`** – Zeigt kritische Hinweise beim Einrichten eines Ladeplans (Limit-Überschreitung, Zeitfenster, Fahrzeuglimit).
 
 ---
 
@@ -82,114 +83,40 @@ Das Projektziel ist explizit auf das Frontend beschränkt. Das Go-Backend ist ei
 
 | Nr. | Typ | Framework | Datei | Tests |
 |-----|-----|-----------|-------|-------|
-| UT-1 | Unit | Vitest | `unit-tests/store.test.ts` | 4 |
-| UT-2 | Unit | Vitest | `unit-tests/uiLoadpoints.test.ts` | 5 |
-| UT-3 | Unit | Vitest | `unit-tests/components/Loadpoints/Phases.test.ts` | 7 |
-| UT-4 | Unit | Vitest | `unit-tests/components/Vehicles/LimitEnergySelect.test.ts` | 6 |
-| UT-5 | Unit | Vitest | `unit-tests/components/Loadpoints/SessionInfo.test.ts` | 6 |
-| IT-1 | Integration | Cypress CT | `integration-tests/component/Mode.cy.ts` | 3 |
-| IT-2 | Integration | Cypress CT | `integration-tests/component/BatteryBoostButton.cy.ts` | 4 |
-| IT-3 | Integration | Cypress CT | `integration-tests/component/LimitSocSelect.cy.ts` | 5 |
+| UT-1 | Unit | Vitest | `unit-tests/chargingPlanWarnings.test.ts` | 9 |
+| IT-1 | Integration | Cypress CT | `integration-tests/component/BatteryBoostIntegration.cy.ts` | 4 |
+| IT-2 | Integration | Cypress CT | `integration-tests/component/MinSocCharging.cy.ts` | 4 |
+| IT-3 | Integration | Cypress CT | `integration-tests/component/DeparturePlan.cy.ts` | 5 |
 | E2E-1 | E2E | Playwright | `e2e-tests/charging-lifecycle.spec.ts` | 1 |
 | E2E-2 | E2E | Playwright | `e2e-tests/smart-cost-flow.spec.ts` | 1 |
 | LT-1 | Last | k6 | `load-tests/websocket-load.js` | – |
 
-**Gesamt: 41 Testfälle** (31 Unit, 12 Integration, 2 E2E, 1 Lasttest)
+**Gesamt: 24 Testfälle** (9 Unit, 13 Integration, 2 E2E, 1 Lasttest)
 
 ---
 
 ## 3. Unit-Tests (Vitest)
 
-### UT-1: `store.ts` – WebSocket-State-Management
+### UT-1: `Warnings.vue` – Ladeplan-Warnungslogik
 
-**Datei:** `WAT4/unit-tests/store.test.ts`
+**Datei:** `WAT4/unit-tests/chargingPlanWarnings.test.ts`
 
-**Getestete Funktionalität:** Die interne Funktion `setProperty()` wird indirekt über die öffentliche API `store.update()` getestet. Sie ist verantwortlich für das Einlesen aller WebSocket-Nachrichten in den reaktiven Zustand.
-
-**Testfälle:**
-1. Setzt eine String-Property auf Top-Level-Ebene
-2. Führt Object-Merge durch (bestehende Felder bleiben erhalten)
-3. Aktualisiert verschachtelte Loadpoint-Property via Dot-Notation (`"loadpoints.0.chargePower"`)
-4. `store.reset()` leert Array-Felder, behält `offline`-Flag
-
-**Warum dieser Bereich wichtiger ist als andere:**
-`store.update()` ist der **einzige Eintrittspunkt** für alle Echtzeit-Daten. Jede WebSocket-Nachricht – Ladeleistung, SoC, Fahrzeugstatus, Tarife – läuft durch diese Funktion. Ein Bug hier würde alle Echtzeitdaten silent verwerfen und die gesamte UI auf veralteten oder fehlerhaften Werten einfrieren. Die Dot-Notation-Verarbeitung (`"loadpoints.0.mode"`) ist besonders fehleranfällig, weil sie dynamisch Objektpfade auflöst und Array-Indices als Objekt-Keys behandelt. Vor dieser Arbeit existierten **null Tests** für `store.ts`.
-
----
-
-### UT-2: `uiLoadpoints.ts` – Abgeleiteter UI-Zustand
-
-**Datei:** `WAT4/unit-tests/uiLoadpoints.test.ts`
-
-**Getestete Funktionalität:** `convertToUiLoadpoints()` leitet aus dem rohen Store-Zustand alle UI-relevanten Werte für Ladepunkte ab.
+**Getestete Funktionalität:** `Warnings.vue` zeigt dem Nutzer kritische Hinweise, wenn ein eingerichteter Ladeplan nicht wie erwartet funktionieren wird. Die Komponente hat fünf unabhängige `computed`-Eigenschaften, die jeweils eine konkrete Fehlerbedingung prüfen.
 
 **Testfälle:**
-1. `vehicleHasSoc = false` wenn kein Fahrzeug zugeordnet; `true` bei Online-Fahrzeug
-2. `vehicleHasSoc = false` wenn Fahrzeug Feature „Offline" hat (kein SoC vom Fahrzeug)
-3. `rangePerSoc` nur berechnet wenn `vehicleSoc > 10` (verhindert Division durch kleine Werte)
-4. `socPerKwh = 100 / capacity`; Fallback auf 0 wenn keine Kapazität bekannt
-5. `socBasedPlanning = false` wenn `capacity = 0`; `true` wenn Kapazität vorhanden
 
-**Warum dieser Bereich wichtiger ist als andere:**
-`uiLoadpoints.ts` ist die **UI-State-Zentrale**: Sie entscheidet, ob SoC-Anzeige, Reichweitenanzeige, Ladeplanung und Smart-Charging für den Nutzer sichtbar sind. Ein Bug hier deaktiviert Premium-Features (PV-Laden, Ladeplanung) für alle Nutzer mit SoC-fähigen Fahrzeugen, ohne sichtbaren Fehler. Die Formel `rangePerSoc = (range / vehicleSoc) × 100` ist erst ab `vehicleSoc > 10` definiert – darunter entstehen rechnerisch unsinnige Werte. Diese Funktion lief vollständig ohne Tests.
+1. **Baseline:** Kein Warntext wenn alle Props neutral sind (kein false positive)
+2. **`targetIsAboveLimit` – SoC-Modus:** Warnung wenn Plan-SoC (90 %) über `effectiveLimitSoc` (80 %) liegt – Laden stoppt vorher
+3. **`targetIsAboveLimit` – Grenzwert:** Keine Warnung wenn Plan-SoC dem Ladelimit genau entspricht
+4. **`targetIsAboveLimit` – Energie-Modus:** Warnung wenn `planEnergy` (30 kWh) über `limitEnergy` (20 kWh) liegt (eigener Code-Branch)
+5. **`notReachableInTime` – überschritten:** Warnung wenn geschätzte Endzeit die Zielzeit um mehr als 60 Sekunden überschreitet
+6. **`notReachableInTime` – Toleranzgrenze:** Keine Warnung bei 30 Sekunden Überschreitung (innerhalb der 1-Minuten-Toleranz)
+7. **`targetIsAboveVehicleLimit`:** Warnung wenn Plan-SoC (95 %) über dem Fahrzeug-eigenen Limit (80 %) liegt
+8. **`targetIsAboveVehicleLimit` – kein Problem:** Keine Warnung wenn Plan-SoC (75 %) innerhalb des Fahrzeug-Limits liegt
+9. **Modus-Warnung:** Hinweis wenn Lademodus `"off"` – Plan läuft nie an; kein Hinweis im `"pv"`-Modus
 
----
-
-### UT-3: `Phases.vue` – Phasenstrom-Visualisierung
-
-**Datei:** `WAT4/unit-tests/components/Loadpoints/Phases.test.ts`
-
-**Getestete Funktionalität:** Berechnung der Balkenbreiten für Ziel- und Ist-Strom sowie die Phasen-Aktivierungslogik.
-
-**Testfälle:**
-1. `targetWidth = 50 %` bei `offeredCurrent = 8 A`, `maxCurrent = 16 A`
-2. `targetWidth` klemmt auf `minCurrent` wenn `offeredCurrent` zu niedrig
-3. `targetWidth` klemmt auf 100 % wenn `offeredCurrent` `maxCurrent` überschreitet
-4. `isPhaseActive` via `phasesActive`: 1-phasig → nur Phase 1 aktiv
-5. `isPhaseActive` via `chargeCurrents`: Phase aktiv wenn Ist-Strom ≥ 1 A
-6. `chargeCurrentsActive = false` wenn alle Phasenströme < 1 A
-7. `realWidth` gibt Ist-Strom je Phase zurück; fällt auf `targetWidth` zurück ohne Messwerte
-
-**Warum dieser Bereich wichtiger ist als andere:**
-`Phases.vue` visualisiert für den Nutzer welche Phasen aktiv laden – essenziell für 1/2/3-phasige Wallboxen. Die Komponente wechselt zwischen zwei Modi: Wenn Echtzeit-Messwerte (`chargeCurrents`) vorhanden sind, werden diese angezeigt; sonst greift `phasesActive` aus dem Backend. Die Clamp-Logik in `targetWidth` verhindert einen Balken über 100 %, und die `realWidth`-Fallback-Logik muss korrekt sein – fehlt sie, zeigt die UI 0 % bei laufendem Laden. Komplett ungetestet.
-
----
-
-### UT-4: `LimitEnergySelect.vue` – Energielimit mit SoC-Schätzung
-
-**Datei:** `WAT4/unit-tests/components/Vehicles/LimitEnergySelect.test.ts`
-
-**Getestete Funktionalität:** SoC-Schätzung aus Energielimit und Kapazität, adaptiver Optionsschritt sowie Float-Emission.
-
-**Testfälle:**
-1. `estimated = null` wenn `socPerKwh` nicht bekannt (Kapazität unbekannt)
-2. `estimated = 50` bei `limitEnergy = 10`, `socPerKwh = 5`
-3. `estimated = 0` bei `limitEnergy = 0` (kein Limit gesetzt)
-4. `step = 5 kWh` bei großer Kapazität (≥ 75 kWh)
-5. `step = 1 kWh` bei mittelgroßer Kapazität (10–24 kWh)
-6. `change` emittiert `"limit-energy-updated"` mit Float-Wert (z. B. 7.5)
-
-**Warum dieser Bereich wichtiger ist als andere:**
-`LimitEnergySelect` ist das kWh-Gegenstück zu `LimitSocSelect` für Fahrzeuge ohne SoC-Sensor. `estimated` berechnet die SoC-Schätzung für die Reichweitenanzeige – ein Bug führt zu falschen Ladeentscheidungen. `step` bestimmt die Granularität der Optionen adaptiv zur Fahrzeugkapazität: Für einen 20-kWh-Akku wären 5-kWh-Schritte zu grob, für einen 100-kWh-Akku wären 1-kWh-Schritte unübersichtlich. `change` muss als Float emittieren – ein String würde den API-Call (`/api/loadpoints/0/limitsoc/NaN`) brechen. Komplett ungetestet.
-
----
-
-### UT-5: `SessionInfo.vue` – Tarif-abhängige Ladestatistik
-
-**Datei:** `WAT4/unit-tests/components/Loadpoints/SessionInfo.test.ts`
-
-**Getestete Funktionalität:** Filterung der sichtbaren Metriken nach Tarif-Konfiguration und zyklische Navigation.
-
-**Testfälle:**
-1. Ohne `tariffGrid` sind `"avgPrice"` und `"price"` nicht in den Optionen
-2. Mit `tariffGrid` sind `"avgPrice"` und `"price"` verfügbar
-3. Ohne `tariffCo2` sind `"co2"` und `"emission"` nicht in den Optionen
-4. `"remaining"` und `"finished"` nur sichtbar bei `chargeRemainingDurationInterpolated > 0`
-5. `nextSessionInfo` wechselt zum nächsten `optionKey`
-6. `nextSessionInfo` springt am Ende der Liste zurück zum ersten Key
-
-**Warum dieser Bereich wichtiger ist als andere:**
-`SessionInfo` zeigt Ladestatistiken (Kosten, Dauer, Solar-Anteil, CO2). Die `options`-Computed filtert Metriken danach, ob der Nutzer einen Tarif konfiguriert hat: Ohne `tariffGrid` darf keine Preis-Anzeige erscheinen – andernfalls sehen Nutzer sinnlose Nullwerte und ziehen falsche Schlüsse über ihre Ladekosten. `nextSessionInfo` ermöglicht per Klick das Durchschalten zwischen Metriken – ein Off-by-one-Fehler würde eine Metrik überspringen oder am Ende mit `undefined` abstürzen. Komplett ungetestet.
+**Warum `Warnings.vue` und warum Unit-Test:**
+Falsche Warnungen (false positive/negative) führen direkt zu unbemerkt fehlgeschlagenen Ladeplänen oder unnötiger Nutzerverwirrung. Die fünf `computed`-Eigenschaften sind vollständig durch Props gesteuert und haben keine Seiteneffekte – ideale Bedingungen für isolierte Unit-Tests ohne Browser. Besonders die `notReachableInTime`-Toleranz (60 Sekunden) ist eine nicht-offensichtliche Designentscheidung, die explizit durch einen Boundary-Test abgesichert werden muss.
 
 ---
 
@@ -207,48 +134,73 @@ Cypress Component Testing (CT) rendert Vue-Komponenten in einem **echten Chromiu
 | CSS-Variablen | Nicht berechnet | Vollständig berechnet |
 | Animationen | Nicht ausgeführt | Laufen wie in Produktion |
 
-Die **Unit-Tests** (UT-3 bis UT-5) testen das **berechnete Modell** (welche Werte eine Komponente produziert). Die **Integrationstests** (IT-1 bis IT-3) testen die **DOM-Realisierung** (wie die Komponente im echten Browser aussieht und sich verhält).
+Die **Unit-Tests** testen das **berechnete Modell** einer Komponente (welche Werte sie produziert). Die **Integrationstests** testen die **DOM-Realisierung mehrerer Komponenten zusammen** – wie Props über Komponentengrenzen fließen, Ereignisse weitergeleitet werden und sich der DOM reaktiv aktualisiert.
 
-### IT-1: `Mode.vue` – DOM-Rendering und Click-Events
-
-**Datei:** `WAT4/integration-tests/component/Mode.cy.ts`
-
-**Testfälle:**
-1. Alle 4 Modus-Buttons bei `pvPossible = true` vorhanden; aktiver Modus markiert
-2. Klick auf Button emittiert `"updated"` mit korrektem Wert (`"pv"`)
-3. Nur 2 Buttons ohne PV und SmartCost
-
-**Warum Cypress CT hier gegenüber Vitest:**
-Die `active`-CSS-Klasse wird durch Bootstrap-Styles visuell dargestellt. Cypress prüft, ob diese Klasse tatsächlich im DOM gesetzt wird und ob der Click-Handler im echten Browser-Event-Loop feuert. Happy-dom simuliert den Click-Event-Bubbling nicht vollständig korrekt.
+Alle Integrationstests verwenden `Vehicle.vue` als echten Elternteil. Vehicle nutzt den `collector`-Mixin, der via `collectProps()` Props automatisch an die richtigen Kinder verteilt. Dieser Mechanismus kann ausschließlich im echten Browser mit echten Vue-Instanzen verifiziert werden.
 
 ---
 
-### IT-2: `BatteryBoostButton.vue` – Visuelle Zustände und Klick-Verhalten
+### IT-1: `Vehicle` ↔ `BatteryBoostButton` ↔ `VehicleStatus` – Boost startet Ladung
 
-**Datei:** `WAT4/integration-tests/component/BatteryBoostButton.cy.ts`
+**Datei:** `WAT4/integration-tests/component/BatteryBoostIntegration.cy.ts`
+
+**Beteiligte Komponenten:**
+- `Vehicle.vue` – die übergeordnete Komponente, die den Boost-Button nur anzeigt wenn das Fahrzeug verbunden ist und ein Batterielimit unter 100 % gesetzt ist. Sie empfängt den Klick des Buttons und gibt ihn nach oben weiter.
+- `BatteryBoostButton.vue` – der eigentliche Button. Besonderheit: Er markiert sich beim Klick **sofort** als aktiv, noch bevor das Backend geantwortet hat. Ist der aktuelle Batterieladestand unter dem konfigurierten Limit, wird der Klick ignoriert.
+- `VehicleStatus` – zeigt den aktuellen Ladestatus als Text an (z. B. „Warte auf Fahrzeug" oder „Lädt").
 
 **Testfälle:**
-1. `disabled`-Attribut im OFF-Modus; nicht `disabled` im PV-Modus
-2. CSS-Klasse `belowLimit` vorhanden wenn SoC < Limit
-3. Klick oberhalb des Limits emittiert `"updated"` mit `true`
-4. **Sicherheitsmechanismus:** Klick unterhalb des Limits emittiert **kein** `"updated"`, nur `"status"`
 
-**Warum Cypress CT hier gegenüber Vitest:**
-Testfall 4 ist der kritischste: Der Sicherheitsmechanismus (kein Boost-Toggle unter dem Limit) muss im echten Browser korrekt ablaufen. Der Button ist in diesem Zustand nicht `disabled` (er ist klickbar), aber die Click-Handler-Logik verhindert den Boost. Cypress kann dieses Verhalten mit echten DOM-Click-Events testen. Die CSS-Variable `--soc` für die Fortschrittsanzeige ist nur im echten Browser berechenbar.
+1. Button ist sichtbar und nicht aktiv wenn das Fahrzeug nicht lädt
+2. Klick auf Button → Button zeigt sofort aktiven Zustand + Ereignis wird weitergegeben
+3. Nachdem das Backend „Laden gestartet" meldet, zeigt VehicleStatus „charging"
+4. Button ist gesperrt wenn der Lademodus auf „off" steht
+
+**Zusammenspiel:**
+Getestet wird ob der Klick auf den Button korrekt durch alle drei Komponenten durchgereicht wird und ob sich die Statusanzeige danach aktualisiert. Wichtig dabei: Button und Statusanzeige kennen sich nicht – sie kommunizieren ausschließlich über `Vehicle.vue` in der Mitte.
 
 ---
 
-### IT-3: `LimitSocSelect.vue` – Select-DOM und Event-Emission
+### IT-2: `Vehicle` ↔ `VehicleStatus` ↔ `StatusItem` – MinSoc-Ladestart
 
-**Datei:** `WAT4/integration-tests/component/LimitSocSelect.cy.ts`
+**Datei:** `WAT4/integration-tests/component/MinSocCharging.cy.ts`
+
+**Beteiligte Komponenten:**
+- `Vehicle.vue` – übergeordnete Komponente, die den aktuellen Fahrzeugzustand (`connected`, `charging`, `minSocNotReached`) an VehicleStatus weitergibt.
+- `VehicleStatus` – berechnet daraus den anzuzeigenden Statustext und welche Hinweis-Badges sichtbar sind.
+- `StatusItem.vue` – rendert einen einzelnen Badge (z. B. das MinSoc-Badge mit dem Prozentwert).
 
 **Testfälle:**
-1. 17 `<option>`-Elemente im DOM vorhanden; erster Wert „20", letzter „100"
-2. Reichweite-Anzeige erscheint wenn `rangePerSoc` gesetzt (AnimatedNumber mit Wert 400)
-3. Native `select`-Änderung emittiert `"limit-soc-updated"` mit Integer 60
 
-**Warum Cypress CT hier gegenüber Vitest:**
-`LimitSocSelect` nutzt ein **unsichtbares natives `<select>`** (position: absolute, opacity: 0) über einem styled `<span>`. Diese Überlagerungstechnik ist browserspezifisch. Im echten Browser testet Cypress, ob das native `change`-Event in Kombination mit Vue's `@change` korrekt feuert und der DOM-Baum die erwarteten Optionen enthält. Happy-dom ignoriert CSS-Positionierung vollständig.
+1. Kein MinSoc-Badge und Status „getrennt" wenn das Fahrzeug nicht angeschlossen ist
+2. MinSoc-Badge erscheint sobald das Fahrzeug verbunden wird und der Mindestladestand noch nicht erreicht ist
+3. Status wechselt zu „lädt" sobald die Ladung startet – Badge bleibt sichtbar
+4. Badge verschwindet wenn der Mindestladestand erreicht ist
+
+**Zusammenspiel:**
+Getestet wird der Ablauf vom Anschließen des Fahrzeugs bis zum Erreichen des Mindestladestands. Dabei muss `Vehicle.vue` die Zustandsänderungen korrekt an `VehicleStatus` weitergeben, welches wiederum `StatusItem` die richtigen Badges anzeigen lässt.
+
+---
+
+### IT-3: `Vehicle` ↔ `ChargingPlan` ↔ `VehicleStatus` ↔ `StatusItem` – Abfahrtsplan
+
+**Datei:** `WAT4/integration-tests/component/DeparturePlan.cy.ts`
+
+**Beteiligte Komponenten:**
+- `Vehicle.vue` – übergeordnete Komponente, die die Plan-Daten (Abfahrtszeit, Ziel-SoC, ob der Plan gerade aktiv ist) an zwei Kindkomponenten gleichzeitig weitergibt.
+- `ChargingPlan.vue` – zeigt einen klickbaren Button mit der eingestellten Abfahrtszeit und dem Ziel-SoC an. Ohne Plan steht dort ein „kein Plan"-Platzhaltertext.
+- `VehicleStatus` + `StatusItem.vue` – zeigen einen Badge an: „Plan geplant" solange das Laden noch nicht gestartet hat, danach „Plan aktiv" während des Ladevorgangs.
+
+**Testfälle:**
+
+1. Kein Plan gesetzt → ChargingPlan zeigt Platzhalter, kein Badge in VehicleStatus
+2. Plan eingerichtet → ChargingPlan zeigt Abfahrtszeit und Ziel-SoC (80 %)
+3. Plan ist noch nicht gestartet → „Plan geplant"-Badge sichtbar
+4. Ladevorgang startet → Badge wechselt von „geplant" zu „aktiv", ChargingPlan-Button bleibt sichtbar
+5. Klick auf den Plan-Button öffnet den Plan-Dialog
+
+**Zusammenspiel:**
+Die Besonderheit dieses Tests ist, dass eine einzige Zustandsänderung (`planActive` wird `true`) **gleichzeitig zwei verschiedene Bereiche der Oberfläche** aktualisiert: den Plan-Badge in VehicleStatus und den Plan-Button in ChargingPlan. Beide Komponenten erhalten ihre Daten unabhängig voneinander von `Vehicle.vue` – der Test stellt sicher, dass beide korrekt und gleichzeitig reagieren.
 
 ---
 
@@ -270,36 +222,29 @@ Playwright-Tests laufen gegen einen **echten evcc-Server** mit einem dedizierten
 
 Der Simulator (konfiguriert in `tests/simulator.evcc.yaml`) stellt einen Ladepunkt mit Fahrzeug, PV-Anlage und Stromtarif zur Verfügung.
 
+---
+
 ### E2E-1: Fahrzeug-Ladelifecycle
 
 **Datei:** `WAT4/e2e-tests/charging-lifecycle.spec.ts`
 
 **Testszenario:**
-1. Simulator konfigurieren: Fahrzeug aktiv ladend (Status „C")
-2. evcc-Hauptansicht öffnen (`/`)
-3. Ladepunkt ist sichtbar und zeigt Ladestat us
-4. Modus-Gruppe ist sichtbar
-5. Letzten Modus-Button klicken und `active`-Klasse prüfen
+Fahrzeug ist verbunden (Zustand B/C), Modus „Schnell" (NOW) wird gewählt → Simulator reagiert → UI zeigt animierten Ladebalken und Status „Charging…".
 
 **Warum dieser E2E-Test kritisch ist:**
-Dies ist die **Kern-User-Journey** in evcc: Fahrzeug einstecken → Ladestellung bestätigen → Modus wählen. Der Test validiert, dass WebSocket-Daten vom echten Backend korrekt in der UI ankommen, dass Modus-Buttons auf Nutzerinteraktion reagieren und dass die Komponenten `Loadpoint`, `Mode` und `VehicleStatus` korrekt zusammenwirken. Kein anderer Test deckt diesen vollständigen Ablauf mit echtem Server-Backend ab.
+Dies ist die **Kern-User-Journey** in evcc: Fahrzeug einstecken → Modus wählen → Ladevorgang startet. Der Test validiert, dass WebSocket-Daten vom echten Backend korrekt in der UI ankommen, Modus-Buttons auf Nutzerinteraktion reagieren und `Loadpoint`, `Mode` sowie `VehicleStatus` korrekt zusammenwirken. Kein anderer Test deckt diesen vollständigen Ablauf mit echtem Server-Backend ab.
 
 ---
 
-### E2E-2: Smart-Cost-Ladeplanung
+### E2E-2: Smart-Cost-Threshold erlaubt Ladestart
 
 **Datei:** `WAT4/e2e-tests/smart-cost-flow.spec.ts`
 
 **Testszenario:**
-1. Simulator: 6.000 W PV-Leistung + ladendes Fahrzeug
-2. Ladepunkt-Einstellungen-Modal öffnen
-3. „Enable limit" Checkbox aktivieren
-4. Preislimit auf ersten verfügbaren Wert setzen
-5. Modal schließen
-6. `vehicle-status-smartcost`-Element ist sichtbar
+Fahrzeug verbunden, kein aktiver Ladevorgang → Preislimit ≤ 40,0 ct/kWh konfigurieren → Simulator-Tarif liegt darunter → Modus „Schnell" wählen → UI zeigt „Charging…" und Smart-Cost-Badge mit Preis-Limit-Vergleich (`≤ 40.0 ct`).
 
 **Warum dieser E2E-Test kritisch ist:**
-Smart-Cost-Laden ist der **wirtschaftliche Kern-Use-Case** für Nutzer mit dynamischen Stromtarifen (z. B. Tibber, aWATTar). Ein Bug im UI-Flow – falsche API-Calls, fehlerhafte Unit-Konversion (ct/kWh ↔ EUR/kWh) – kostet Nutzer direkt Geld. Der vollständige Flow von Modal-Öffnung über Limit-Setzung bis zur Status-Bestätigung war in keinem bestehenden Playwright-Test abgedeckt.
+Smart-Cost-Laden ist der **wirtschaftliche Kern-Use-Case** für Nutzer mit dynamischen Stromtarifen. Der Test prüft den vollständigen Kausal-Flow: Threshold-Setzen → Gate öffnet sich → Statusübergang Connected → Charging. Die Assertion `≤ 40.0 ct` verifiziert, dass der UI der konkrete Preis-Threshold korrekt aus dem Backend empfangen und angezeigt wird.
 
 ---
 
@@ -352,16 +297,13 @@ evcc ist ein **Heimserver**, der von mehreren Geräten gleichzeitig überwacht w
 ### Ausführung
 
 ```bash
-# Schritt 1: Simulator starten (Vite-App, stellt /api/state auf Port 7072 bereit)
-npm run simulator
-
-# Schritt 2: evcc-Server starten (in einem zweiten Terminal)
+# Schritt 1: evcc-Server starten
 go run . --config tests/simulator.evcc.yaml
 
 # k6 installieren (Windows, einmalig)
 winget install k6
 
-# Schritt 3: Lasttest ausführen (in einem dritten Terminal)
+# Schritt 2: Lasttest ausführen
 npm run test:load
 # alternativ:
 k6 run WAT4/load-tests/websocket-load.js
@@ -393,16 +335,15 @@ npm run test:load
 
 | Test-Typ | Isolationsmechanismus |
 |----------|----------------------|
-| Unit (Vitest) | `beforeEach: store.reset()` + `vi.mock()` für externe Module; kein Backend |
-| Integration (Cypress CT) | Jeder `it()`-Block mounted Komponente frisch; Stubs für Sub-Komponenten |
+| Unit (Vitest) | Jeder Test mount die Komponente frisch; kein globaler State; kein Backend |
+| Integration (Cypress CT) | Jeder `it()`-Block mounted Komponente neu; Stubs für nicht relevante Sub-Komponenten |
 | E2E (Playwright) | `beforeEach` startet frischen Simulator + evcc-Server; `afterEach` stoppt beide |
 | Lasttest (k6) | Jeder VU ist unabhängig; Server muss manuell gestartet werden |
 
 ### Mock-Strategie
 
 - **i18n**: `$t`, `$te`, `$i18n` werden in allen Tests gemockt (kein echtes vue-i18n nötig)
-- **settings/localStorage**: `vi.mock("@/settings")` verhindert Seiteneffekte zwischen Tests
-- **Sub-Komponenten**: `LabelAndValue`, `AnimatedNumber`, `BatteryBoost` werden gestubbt, um Tests auf die Zielkomponente zu fokussieren
+- **Sub-Komponenten**: `VehicleSoc`, `ChargingPlan` (in IT-1/IT-2) und `VehicleTitle` werden gestubbt, um Tests auf die Ziel-Komponentenkette zu fokussieren. `VehicleStatus`, `BatteryBoostButton` und `ChargingPlan` (in IT-3) bleiben bewusst ungestubbt.
 - **Backend**: Unit- und Integrationstests benötigen **kein** laufendes Backend
 
 ---
@@ -437,20 +378,19 @@ Der Lasttest ist **nicht** für automatische CI-Ausführung vorgesehen, da er ei
 
 ## 9. Testergebnisse
 
-### Unit-Tests (verifiziert)
+### Unit-Tests (Vitest)
 
 ```
-Test Files  5 passed (5)
-     Tests  31 passed (31)
-  Duration  ~6s
+Test Files  1 passed (1)
+     Tests  9 passed (9)
+  Duration  ~2s
 ```
 
-Alle 31 Testfälle laufen grün. Die WAT4-Testdateien werden automatisch durch Vitests
-Standard-Glob-Pattern `**/*.test.ts` gefunden (relativ zum Projekt-Root).
+Alle 9 Testfälle laufen grün. Die Datei wird automatisch durch Vitests Standard-Glob-Pattern `**/*.test.ts` gefunden.
 
 ### Integrationstests (Cypress CT)
 
-Cypress CT wurde konfiguriert und installiert. Die Testdateien sind vollständig geschrieben. Eine Verifikation im Browser erfordert die Ausführung von `npm run test:cypress:open`.
+Alle 13 Integrationstests in den drei Cypress-CT-Dateien laufen erfolgreich durch. Die Tests wurden im interaktiven Cypress-Browser-Modus (`npm run test:cypress:open`) verifiziert.
 
 ### E2E-Tests (Playwright)
 
@@ -464,10 +404,18 @@ Der Lasttest erfordert eine k6-Installation (`winget install k6`) und einen lauf
 
 ## 10. Fazit
 
-Das Frontend-Testing von evcc deckt nach dieser Arbeit erstmalig die kritischsten Teile der Anwendung ab:
+Die implementierten Tests decken drei qualitativ unterschiedliche Ebenen ab:
 
-- **`store.ts`** – der Echtzeit-Daten-Eintrittspunkt – ist nun mit 4 Unit-Tests gesichert
-- **`uiLoadpoints.ts`** – die UI-State-Zentrale – ist mit 5 Unit-Tests abgedeckt
-- Die drei wichtigsten interaktiven Komponenten (Mode, BatteryBoostButton, LimitSocSelect) haben jeweils Unit- **und** Integrationstests in unterschiedlichen Frameworks
+- **Unit-Ebene (`Warnings.vue`):** Die Ladeplan-Warnungslogik ist durch 9 Tests abgesichert, inklusive Boundary-Tests für die 60-Sekunden-Toleranz und beide Code-Branches (SoC- und Energie-Modus). Falsche Warnungen wären für Nutzer unsichtbar und würden Ladepläne still scheitern lassen.
 
-Die Auswahl der Testbereiche folgte dem Kriterium des **höchsten Schadenspotenzials bei einem Bug**: Bereiche, in denen ein einzelner Fehler entweder alle Nutzer betrifft (store.ts, uiLoadpoints.ts) oder direkte wirtschaftliche/sicherheitstechnische Konsequenzen hat (Smart-Cost, Battery-Boost), wurden bevorzugt getestet.
+- **Integrationsebene (Cypress CT):** Alle drei Integrationstests verwenden `Vehicle.vue` als echten Mediator und prüfen Prop-Flüsse über 3–4 Komponentengrenzen hinweg. Der `collector`-Mixin-Mechanismus, der Props automatisch an Kinder verteilt, kann nur im echten Browser verifiziert werden. Besonders der zweistufige Boost-Test (optimistisches Feedback vor Backend-Bestätigung) und der Abfahrtsplan-Test (ein `setProps()` aktualisiert zwei unabhängige Komponentenstränge gleichzeitig) sind repräsentative Integrationstests für die Vue-Reaktivitätsarchitektur von evcc.
+
+- **E2E-Ebene (Playwright):** Die Kern-User-Journeys (Ladestart, Smart-Cost-Schwellenwert) werden gegen den echten evcc-Server validiert.
+
+Die Auswahl der Testbereiche folgte dem Kriterium des **höchsten Schadenspotenzials bei einem Bug**: Bereiche, in denen ein einzelner Fehler entweder alle Nutzer betrifft (Ladeplan-Warnungen, MinSoc-Ladestart) oder direkte wirtschaftliche Konsequenzen hat (Smart-Cost, Battery-Boost), wurden bevorzugt getestet.
+
+---
+
+## 11. KI-Werkzeuge
+
+Bei der Ausarbeitung dieser Projektarbeit wurde **Claude Sonnet 4.6** (Anthropic) als KI-Assistent eingesetzt. Das KI-Werkzeug unterstützte bei der Analyse der Komponentenarchitektur, dem Entwurf der Testfälle und der Implementierung der Testdateien. Alle Tests wurden anschließend manuell verifiziert und bei Bedarf korrigiert (z. B. `{ force: true }` für von `CustomSelect` überdeckte Buttons).

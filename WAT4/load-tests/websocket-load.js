@@ -1,5 +1,10 @@
 /**
- * LT-1: WebSocket-Verbindungsstress & REST-API Concurrent Load (k6)
+ * LT: WebSocket & REST-API Load test (k6)
+ *
+ * Dieser Test simuliert realistische Haushalts-Last:
+ * - Ramp-up auf 10 gleichzeitige "Browser" (ein Haushalt + mehrere Geräte)
+ * - Kurze Spitze auf 20 gleichzeitige Verbindungen
+ * - Jeder "Browser" hält eine WebSocket-Verbindung + macht REST-API-Anfragen
  */
 
 import ws from "k6/ws";
@@ -7,7 +12,6 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Rate, Trend } from "k6/metrics";
 
-// Eigene Metriken für detaillierte Analyse
 const wsErrorRate = new Rate("ws_errors");
 const apiErrorRate = new Rate("api_errors");
 const wsMessageLatency = new Trend("ws_message_latency_ms");
@@ -15,13 +19,13 @@ const wsMessageLatency = new Trend("ws_message_latency_ms");
 const BASE_URL = "http://localhost:7070";
 const WS_URL = "ws://localhost:7070/ws";
 
-/** k6 Lastprofil: Simuliert realistische Haushalts-Gleichzeitigkeit */
+// k6 Lastprofil
 export const options = {
   stages: [
-    { duration: "20s", target: 5 },  // Ramp-up: 0 → 5 gleichzeitige Clients
-    { duration: "30s", target: 10 }, // Normallast: 10 Clients (typischer Haushalt)
-    { duration: "20s", target: 20 }, // Spitzenlast: 20 Clients (Party/Gäste)
-    { duration: "10s", target: 0 },  // Ramp-down
+    { duration: "20s", target: 5 },
+    { duration: "30s", target: 10 },
+    { duration: "20s", target: 20 },
+    { duration: "10s", target: 0 },
   ],
   thresholds: {
     // WebSocket-Verbindung muss in 95% der Fälle unter 500ms aufgebaut sein
@@ -61,10 +65,6 @@ export default function () {
     let messageCount = 0;
     const connectTime = Date.now();
 
-    socket.on("open", () => {
-      // Verbindung erfolgreich – Frontend würde jetzt auf Updates warten
-    });
-
     socket.on("message", (data) => {
       messageCount++;
       // Latenz der ersten Nachricht messen (Zeit bis erstes State-Update)
@@ -89,11 +89,7 @@ export default function () {
       console.error(`WebSocket-Fehler: ${e}`);
     });
 
-    socket.on("close", () => {
-      // Verbindung wurde sauber geschlossen
-    });
-
-    // Verbindung für 5 Sekunden offen halten (Browser würde viel länger bleiben)
+    // Verbindung für 5 Sekunden offen halten
     socket.setTimeout(() => {
       socket.close();
     }, 5000);
@@ -104,6 +100,6 @@ export default function () {
   });
   wsErrorRate.add(wsResponse.status !== 101);
 
-  // Kurze Pause zwischen den Iterationen (realistische Nutzungspausen)
+  // 1s Pause zwischen den Iterationen
   sleep(1);
 }

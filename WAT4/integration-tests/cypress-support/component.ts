@@ -16,8 +16,14 @@ declare global {
  * Globale mount-Hilfsfunktion mit vordefinierten i18n-Mocks
  *
  * Alle Cypress-CT-Tests verwenden diesen Wrapper, der $t/$te/$i18n
- * automatisch bereitstellt.
+ * automatisch bereitstellt. Individuelle Tests können die Mocks
+ * über die options.global.mocks überschreiben.
  */
+// Zwischen jedem Test 800 ms warten wenn slowMode aktiv (Demo-Tempo)
+beforeEach(() => {
+  if (Cypress.env("slowMode")) cy.wait(1600);
+});
+
 Cypress.Commands.add("mount", (component, options: OptionsParam = {}) => {
   const i18nMocks = {
     $t: (key: string) => key,

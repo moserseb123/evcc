@@ -22,35 +22,40 @@ test.afterEach(async () => {
 });
 
 /**
- * E2E-1: Fahrzeug-Ladelifecycle
+ * E2E-1: Schnell-Modus startet Ladevorgang – Statusübergang und Ladedarstellung
+ *
+ * Validiert:
+ * 1. UI zeigt korrekten Ausgangsstatus "Connected" (kein Ladevorgang)
+ * 2. Modus-Klick auf "Schnell" (NOW) aktiviert den Button
+ * 3. Nach Wallbox-Reaktion: Status wechselt zu "Charging…"
+ * 4. Animierter Fortschrittsbalken zeigt laufenden Ladevorgang visuell an
  */
-test("Fahrzeug lädt und Moduswechsel wird in der UI reflektiert", async ({ page }) => {
-  // Simulator konfigurieren: Fahrzeug verbunden und lädt aktiv
+test("Schnell-Modus startet Ladevorgang und UI zeigt Ladeprozess", async ({ page }) => {
+  // Simulator: Fahrzeug verbunden, aber noch nicht ladend
   await page.goto(simulatorUrl());
-  await page.getByTestId("loadpoint0").getByText("C (charging)").click();
+  await page.getByTestId("loadpoint0").getByText("B (connected)").click();
   await page.getByTestId("loadpoint0").getByText("Enabled").check();
   await simulatorApply(page);
 
-  // evcc-Hauptansicht öffnen
+  // Haupt-UI: Ausgangsstatus ist "Connected." – kein aktiver Ladevorgang
   await page.goto("/");
-
-  // Ladepunkt ist sichtbar und zeigt Ladestatus
   const loadpoint = page.getByTestId("loadpoint");
   await expect(loadpoint).toBeVisible();
+  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Connected");
 
-  // Fahrzeugstatus: Laden aktiv
-  const status = page.getByTestId("vehicle-status-charger");
-  await expect(status).toContainText(/Charging|Connected/);
-
-  // Modus-Gruppe ist sichtbar
+  // Modus "Schnell" auswählen
   const modeGroup = page.getByTestId("mode");
-  await expect(modeGroup).toBeVisible();
+  const schnellButton = modeGroup.getByRole("button").last();
+  await schnellButton.click();
+  await expect(schnellButton).toHaveClass(/active/);
 
-  // Moduswechsel: letzten Button klicken ("Now")
-  const modeButtons = modeGroup.getByRole("button");
-  const lastButton = modeButtons.last();
-  await lastButton.click();
+  // Simulator: Wallbox reagiert auf Lade-Freigabe → charging
+  await page.goto(simulatorUrl());
+  await page.getByTestId("loadpoint0").getByText("C (charging)").click();
+  await simulatorApply(page);
 
-  // Aktiver Modus hat die CSS-Klasse 'active'
-  await expect(lastButton).toHaveClass(/active/);
+  // WebSocket-Update → Ladevorgang sichtbar
+  await page.goto("/");
+  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging");
+  await expect(loadpoint.locator(".progress-bar-animated")).toHaveCount(1);
 });
