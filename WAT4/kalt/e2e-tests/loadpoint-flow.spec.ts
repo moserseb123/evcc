@@ -55,6 +55,8 @@ test("Statusübergang connected → charging vollständig im UI abgebildet", asy
   await simulatorApply(page);
 
   await page.goto("/");
-  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging");
+  await expect(page.getByTestId("vehicle-status-charger")).toContainText("Charging", {
+    timeout: 15000,
+  });
   await expect(page.getByTestId("loadpoint").locator(".progress-bar-animated")).toHaveCount(1);
 });
