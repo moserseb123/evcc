@@ -7,6 +7,7 @@ import {
   simulatorConfig,
   simulatorApply,
 } from "../../../tests/simulator";
+import { expectModalVisible, expectModalHidden } from "../../../tests/utils";
 
 test.use({ baseURL: baseUrl() });
 test.describe.configure({ mode: "serial" });
@@ -92,11 +93,11 @@ test("Ladeplan-Modal kann ohne Fehler geschlossen werden", async ({ page }) => {
   await page.getByTestId("charging-plan-button").first().click();
 
   const modal = page.getByTestId("charging-plan-modal");
-  await expect(modal).toBeVisible();
+  await expectModalVisible(modal);
 
   // Close-Button schließt das Modal – kein Fehler, kein Seiten-Reload
   await modal.locator(".btn-close").click();
-  await expect(modal).not.toBeVisible();
+  await expectModalHidden(modal);
 
   // Hauptseite noch immer intakt: Loadpoint nach Modal-Schließen sichtbar
   await expect(page.getByTestId("loadpoint")).toBeVisible();
