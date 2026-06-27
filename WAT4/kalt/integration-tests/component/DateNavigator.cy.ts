@@ -73,6 +73,7 @@ describe("DateNavigator.vue – Datumsnavigation Ladehistorie", () => {
         "onUpdate-date": onUpdateDate,
         onUpdateDate,
       },
+    });
     cy.get('[data-testid="navigate-prev-day"]').should("not.be.disabled").click({ force: true });
     cy.get("@upd").should("have.been.called");
   });
