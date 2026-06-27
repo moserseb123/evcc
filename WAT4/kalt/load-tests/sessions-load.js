@@ -52,34 +52,29 @@ export default function () {
   const stateOk = check(stateRes, {
     "GET /api/state: Status 200": (r) => r.status === 200,
     "GET /api/state: Body ist gültiges JSON": (r) => {
+      if (!r.body || r.status !== 200) return false;
       try {
-        JSON.parse(r.body);
-        return true;
+        const parsed = JSON.parse(r.body);
+        return parsed !== null && typeof parsed === "object";
       } catch {
         return false;
       }
     },
   });
-  apiErrorRate.add(!stateOk);
+  apiErrorRate.add(stateOk ? 0 : 1);
 
   const tariffRes = http.get(`${BASE_URL}/api/tariff/grid`);
   const tariffOk = check(tariffRes, {
     "GET /api/tariff/grid: Status 200 oder 204": (r) => r.status === 200 || r.status === 204,
   });
-  apiErrorRate.add(!tariffOk);
+  apiErrorRate.add(tariffOk ? 0 : 1);
 
-  const loadpointsRes = http.get(`${BASE_URL}/api/loadpoints`);
-  const loadpointsOk = check(loadpointsRes, {
-    "GET /api/loadpoints: Status 200": (r) => r.status === 200,
-    "GET /api/loadpoints: Antwort ist Array": (r) => {
-      try {
-        return Array.isArray(JSON.parse(r.body));
-      } catch {
-        return false;
-      }
-    },
+  // Loadpoint-Daten sind im /api/state enthalten – kein separater List-Endpoint existiert
+  const stateBody = stateRes.status === 200 ? JSON.parse(stateRes.body) : null;
+  const loadpointsOk = check(stateBody, {
+    "GET /api/state: Loadpoints vorhanden": (b) => b !== null && Array.isArray(b.loadpoints),
   });
-  apiErrorRate.add(!loadpointsOk);
+  apiErrorRate.add(loadpointsOk ? 0 : 1);
 
   const connectStart = Date.now();
   const wsResponse = ws.connect(WS_URL, {}, function (socket) {
