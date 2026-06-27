@@ -397,4 +397,4 @@ Die Auswahl der Testbereiche folgte dem Kriterium des **höchsten Schadenspotenz
 
 ## C.4 KI-Werkzeuge
 
-Bei der Ausarbeitung dieser Projektarbeit wurde **Claude Sonnet 4.6** (Anthropic) als KI-Assistent eingesetzt. Das KI-Werkzeug unterstützte bei der Analyse der Komponentenarchitektur, dem Entwurf der Testfälle und der Implementierung der Testdateien. Alle Tests wurden anschließend manuell verifiziert und bei Bedarf korrigiert.
+**Transparenzhinweis:** Bei der Ausarbeitung dieser Projektarbeit wurde **Claude Sonnet 4.6** (Anthropic) unterstützend eingesetzt.
