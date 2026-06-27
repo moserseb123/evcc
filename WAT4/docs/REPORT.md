@@ -294,6 +294,7 @@ Prüft, dass die Hauptansicht Titel, Live-Leistung (1,0 kW) und genau einen Lade
 ## B.4 Lasttest (k6)
 
 **Datei:** `WAT4/kalt/load-tests/sessions-load.js`
+**Config:** `WAT4/kalt/load-tests/loadtest.evcc.yaml`
 
 Testet den Endpoint `/api/sessions`, der die Ladesessions aus SQLite liest. Ein DB-gestützter Read zeigt ein anderes Lastverhalten als ein reiner In-Memory-State.
 
