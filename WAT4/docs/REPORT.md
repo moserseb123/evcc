@@ -2,7 +2,7 @@
 
 **Modul:** WAT4 – Qualitätssicherung und Testen
 **Datum:** 26. Juni 2026
-**Bearbeiter:** Sebastian Moser, Sebastian Kalteneggerenegger
+**Bearbeiter:** Sebastian Moser, Sebastian Kaltenegger
 **Abgabe:** 27. Juni 2026
 
 ---
@@ -59,7 +59,7 @@ Vor dieser Arbeit hatte das evcc-Frontend eine erhebliche **Coverage-Lücke**:
 | Test-Typ | Framework | Bearbeiter  | Begründung |
 |----------|-----------|-------------|------------|
 | Unit-Tests | **Vitest** + `@vue/test-utils` | Moser       | Standard im Projekt; passt zu vorhandener CI |
-| Unit-Tests | **Vitest** | Kalteneggerenegger | Gleiche Toolchain; kein zusätzliches Framework nötig |
+| Unit-Tests | **Vitest** | Kaltenegger | Gleiche Toolchain; kein zusätzliches Framework nötig |
 | Integrationstests | **Cypress Component Testing** | Beide       | Echtes Chromium-Rendering; testet CSS, Events und Browser-APIs ohne Backend |
 | E2E-Tests | **Playwright** | Beide       | Bereits im Projekt vorhanden; testet gegen echten evcc-Server |
 | Lasttest | **k6** | Beide       | Spezialisiert auf HTTP/WebSocket-Lastsimulation |
@@ -241,7 +241,7 @@ evcc basiert vollständig auf WebSocket für Echtzeit-Updates – ohne funktioni
 
 ---
 
-# Teil B – Sebastian Kalteneggerenegger
+# Teil B – Sebastian Kaltenegger
 
 ---
 
