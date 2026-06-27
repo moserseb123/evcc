@@ -1,7 +1,5 @@
 # WAT4 Projektarbeit – Testbericht
 
-**Modul:** WAT4 – Qualitätssicherung und Testen
-**Datum:** 26. Juni 2026
 **Bearbeiter:** Sebastian Moser, Sebastian Kaltenegger
 **Abgabe:** 27. Juni 2026
 
@@ -120,9 +118,9 @@ Falsche Warnungen führen direkt zu unbemerkt fehlgeschlagenen Ladeplänen oder 
 
 ---
 
-## A.2 Integrationstests (Cypress Component Testing)
+## A.2 Integrationstests
 
-### Warum Cypress CT?
+### Warum Cypress?
 
 Cypress Component Testing rendert Vue-Komponenten in einem echten Chromium-Browser. Die Unit-Tests testen das berechnete Modell einer Komponente. Die Integrationstests testen wie mehrere Komponenten im echten Browser zusammenspielen – Props fließen über Komponentengrenzen, Ereignisse werden weitergeleitet und der DOM aktualisiert sich reaktiv.
 
