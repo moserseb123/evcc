@@ -2,7 +2,7 @@
 
 **Modul:** WAT4 – Qualitätssicherung und Testen
 **Datum:** 26. Juni 2026
-**Bearbeiter:** Sebastian Moser, Sebastian Kaltenegger
+**Bearbeiter:** Sebastian Moser, Sebastian Kalteneggerenegger
 **Abgabe:** 27. Juni 2026
 
 ---
@@ -56,43 +56,36 @@ Vor dieser Arbeit hatte das evcc-Frontend eine erhebliche **Coverage-Lücke**:
 
 ### Framework-Auswahl
 
-| Test-Typ | Framework | Bearbeiter | Begründung |
-|----------|-----------|------------|------------|
-| Unit-Tests | **Vitest** + `@vue/test-utils` | Moser | Standard im Projekt; passt zu vorhandener CI |
-| Unit-Tests | **Jest** + ts-jest | Kalt | Isolierte Config, die nicht mit Vitest kollidiert |
-| Integrationstests | **Cypress Component Testing** | Beide | Echtes Chromium-Rendering; testet CSS, Events und Browser-APIs ohne Backend |
-| E2E-Tests | **Playwright** | Beide | Bereits im Projekt vorhanden; testet gegen echten evcc-Server |
-| Lasttest | **k6** | Beide | Spezialisiert auf HTTP/WebSocket-Lastsimulation |
+| Test-Typ | Framework | Bearbeiter  | Begründung |
+|----------|-----------|-------------|------------|
+| Unit-Tests | **Vitest** + `@vue/test-utils` | Moser       | Standard im Projekt; passt zu vorhandener CI |
+| Unit-Tests | **Vitest** | Kalteneggerenegger | Gleiche Toolchain; kein zusätzliches Framework nötig |
+| Integrationstests | **Cypress Component Testing** | Beide       | Echtes Chromium-Rendering; testet CSS, Events und Browser-APIs ohne Backend |
+| E2E-Tests | **Playwright** | Beide       | Bereits im Projekt vorhanden; testet gegen echten evcc-Server |
+| Lasttest | **k6** | Beide       | Spezialisiert auf HTTP/WebSocket-Lastsimulation |
 
 ### Gesamtübersicht aller Tests
 
 | Nr. | Typ | Framework | Datei | Bearbeiter | Tests |
 |-----|-----|-----------|-------|------------|-------|
-| UT-1 | Unit | Vitest | `unit-tests/chargingPlanWarnings.test.ts` | Moser | 9 |
-| UT-2 | Unit | Jest | `kalt/unit-tests/convertRates.jest.ts` | Kalt | – |
-| UT-3 | Unit | Jest | `kalt/unit-tests/forecastSolar.jest.ts` | Kalt | – |
-| UT-4 | Unit | Jest | `kalt/unit-tests/forecastLowestSlot.jest.ts` | Kalt | – |
-| UT-5 | Unit | Jest | `kalt/unit-tests/forecastStaticTariff.jest.ts` | Kalt | – |
-| UT-6 | Unit | Jest | `kalt/unit-tests/ocpp.jest.ts` | Kalt | – |
-| UT-7 | Unit | Jest | `kalt/unit-tests/remote.jest.ts` | Kalt | – |
-| UT-8 | Unit | Jest | `kalt/unit-tests/tariffCostRange.jest.ts` | Kalt | – |
-| UT-9 | Unit | Jest | `kalt/unit-tests/tariffFindRate.jest.ts` | Kalt | – |
-| UT-10 | Unit | Jest | `kalt/unit-tests/tariffGenerateSlots.jest.ts` | Kalt | – |
-| UT-11 | Unit | Jest | `kalt/unit-tests/uiLoadpoints-layout.jest.ts` | Kalt | – |
-| IT-1 | Integration | Cypress CT | `integration-tests/component/BatteryBoostIntegration.cy.ts` | Moser | 4 |
-| IT-2 | Integration | Cypress CT | `integration-tests/component/MinSocCharging.cy.ts` | Moser | 4 |
-| IT-3 | Integration | Cypress CT | `integration-tests/component/DeparturePlan.cy.ts` | Moser | 5 |
-| IT-4 | Integration | Cypress CT | `kalt/integration-tests/TariffChart.cy.ts` | Kalt | 3 |
-| IT-5 | Integration | Cypress CT | `kalt/integration-tests/DateNavigator.cy.ts` | Kalt | 3 |
-| IT-6 | Integration | Cypress CT | `kalt/integration-tests/SessionTable.cy.ts` | Kalt | 2 |
-| E2E-1 | E2E | Playwright | `e2e-tests/charging-lifecycle.spec.ts` | Moser | 1 |
-| E2E-2 | E2E | Playwright | `e2e-tests/smart-cost-flow.spec.ts` | Moser | 1 |
-| E2E-3 | E2E | Playwright | `kalt/e2e-tests/charge-plan-flow.spec.ts` | Kalt | 2 |
-| E2E-4 | E2E | Playwright | `kalt/e2e-tests/loadpoint-flow.spec.ts` | Kalt | 2 |
-| LT-1 | Last | k6 | `load-tests/websocket-load.js` | Moser | – |
-| LT-2 | Last | k6 | `kalt/load-tests/sessions-load.js` | Kalt | – |
+| UT-1 | Unit | Vitest | `moser/unit-tests/chargingPlanWarnings.test.ts` | Moser | 9 |
+| UT-2 | Unit | Vitest | `kalt/unit-tests/forecast.test.ts` | Kaltenegger | 5 |
+| UT-3 | Unit | Vitest | `kalt/unit-tests/remote.test.ts` | Kaltenegger | 2 |
+| UT-4 | Unit | Vitest | `kalt/unit-tests/tariffSlots.test.ts` | Kaltenegger | 5 |
+| IT-1 | Integration | Cypress CT | `moser/integration-tests/component/BatteryBoostIntegration.cy.ts` | Moser | 4 |
+| IT-2 | Integration | Cypress CT | `moser/integration-tests/component/MinSocCharging.cy.ts` | Moser | 4 |
+| IT-3 | Integration | Cypress CT | `moser/integration-tests/component/DeparturePlan.cy.ts` | Moser | 5 |
+| IT-4 | Integration | Cypress CT | `kalt/integration-tests/component/TariffChart.cy.ts` | Kaltenegger | 3 |
+| IT-5 | Integration | Cypress CT | `kalt/integration-tests/component/DateNavigator.cy.ts` | Kaltenegger | 3 |
+| IT-6 | Integration | Cypress CT | `kalt/integration-tests/component/SessionTable.cy.ts` | Kaltenegger | 2 |
+| E2E-1 | E2E | Playwright | `moser/e2e-tests/charging-lifecycle.spec.ts` | Moser | 1 |
+| E2E-2 | E2E | Playwright | `moser/e2e-tests/smart-cost-flow.spec.ts` | Moser | 1 |
+| E2E-3 | E2E | Playwright | `kalt/e2e-tests/charge-plan-flow.spec.ts` | Kaltenegger | 2 |
+| E2E-4 | E2E | Playwright | `kalt/e2e-tests/loadpoint-flow.spec.ts` | Kaltenegger | 2 |
+| LT-1 | Last | k6 | `moser/load-tests/websocket-load.js` | Moser | – |
+| LT-2 | Last | k6 | `kalt/load-tests/sessions-load.js` | Kaltenegger | – |
 
-**Gesamt: 43+ Testfälle** (9 Moser Unit + 34 Kalt Unit + 13 Moser IT + 8 Kalt IT + 2 Moser E2E + 4 Kalt E2E + 2 Lasttests)
+**Gesamt: 42 Testfälle** (9 Moser Unit + 12 Kaltenegger Unit + 13 Moser IT + 8 Kaltenegger IT + 2 Moser E2E + 4 Kaltenegger E2E + 2 Lasttests)
 
 ---
 
@@ -106,7 +99,7 @@ Vor dieser Arbeit hatte das evcc-Frontend eine erhebliche **Coverage-Lücke**:
 
 ### UT-1: `Warnings.vue` – Ladeplan-Warnungslogik
 
-**Datei:** `WAT4/unit-tests/chargingPlanWarnings.test.ts`
+**Datei:** `WAT4/moser/unit-tests/chargingPlanWarnings.test.ts`
 
 **Getestete Funktionalität:** `Warnings.vue` zeigt dem Nutzer kritische Hinweise, wenn ein eingerichteter Ladeplan nicht wie erwartet funktionieren wird. Die Komponente hat fünf unabhängige `computed`-Eigenschaften, die jeweils eine konkrete Fehlerbedingung prüfen.
 
@@ -248,30 +241,23 @@ evcc basiert vollständig auf WebSocket für Echtzeit-Updates – ohne funktioni
 
 ---
 
-# Teil B – Sebastian Kaltenegger
+# Teil B – Sebastian Kalteneggerenegger
 
 ---
 
-## B.1 Unit-Tests (Jest)
+## B.1 Unit-Tests (Vitest)
 
-**Framework:** Jest mit ts-jest, isolierte Config (`jest.config.cjs`), die nur `*.jest.ts`-Dateien einsammelt und damit nicht mit Vitest oder Playwright kollidiert.
+**Framework:** Vitest – gleiche Toolchain wie Moser, keine separate Konfiguration nötig.
 
-Zehn Dateien mit zusammen 34 Fällen, alle aus den Bereichen Tarif-Utilities, Forecast und UI-State:
+Drei Dateien mit zusammen 12 Fällen, alle aus den Bereichen Forecast-Algorithmen, Remote-Erkennung und Tarifsystem:
 
-| Datei | Getestete Funktion | Warum wichtig |
-|-------|-------------------|---------------|
-| `convertRates.jest.ts` | Wandelt Roh-Tarifdaten in das Slot-Format des UI um | Jede Tarif- und Forecast-Anzeige baut darauf auf; ein Fehler zieht sich durch die gesamte Preisdarstellung |
-| `forecastSolar.jest.ts` | `adjustedSolar` – skaliert PV-Prognose mit Kalibrierfaktor | Ein falscher Faktor verfälscht die komplette Solar-Vorhersage |
-| `forecastLowestSlot.jest.ts` | `findLowestSumSlotIndex` – findet günstigstes Ladefenster | Kern des Smart-Chargings; ein Off-by-one verschiebt das Fenster und kostet Geld |
-| `forecastStaticTariff.jest.ts` | `isStaticTariff` – unterscheidet statischen von dynamischem Tarif | Entscheidet ob Smart-Cost-Planung überhaupt eingeblendet wird |
-| `ocpp.jest.ts` | Baut Wallbox-URL aus `externalUrl` bzw. Hostname/Port | Falsche URL macht die Wallbox unerreichbar |
-| `remote.jest.ts` | `isRemoteClientActive` – Online-Erkennung über 5-Minuten-Grenze | Die Zeitgrenze ist die fehleranfällige Stelle und steuert die Online-Anzeige |
-| `tariffCostRange.jest.ts` | `calculateCostRange` – ermittelt min/max-Preis | Bildet die Preis-Skala der Forecast-Anzeige; Slots ohne Wert dürfen sie nicht verzerren |
-| `tariffFindRate.jest.ts` | `findRateInRange` – liefert den gerade geltenden Tarif | Grundlage jeder aktuellen Kostenanzeige |
-| `tariffGenerateSlots.jest.ts` | `generateRateSlots` – rastert Tarife in 15-Minuten-Slots | Dieses Raster speist die gesamte Preis- und Lade-Markierung; eine falsche Rasterung verschiebt alle Markierungen |
-| `uiLoadpoints-layout.jest.ts` | `setLoadpointOrder` – Reihenfolge und Sichtbarkeit der Loadpoints | Ein Fehler zeigt Ladepunkte in falscher Reihenfolge oder gar nicht an |
+| Datei | Getestete Funktionen | Tests | Warum wichtig |
+|-------|---------------------|-------|---------------|
+| `forecast.test.ts` | `findLowestSumSlotIndex`, `isStaticTariff`, `adjustedSolar` | 5 | Kern des Smart-Chargings; ein Off-by-one beim Ladefenster oder ein falscher Kalibrierfaktor kostet den Nutzer direkt Geld |
+| `remote.test.ts` | `isRemoteClientActive` | 2 | Die 5-Minuten-Grenze ist die fehleranfällige Stelle; ein falsch als „aktiv" gewerteter Client behält Fernzugriff obwohl er weg ist |
+| `tariffSlots.test.ts` | `calculateCostRange`, `findRateInRange`, `generateRateSlots` | 5 | Das Tarifsystem speist die gesamte Preis- und Lade-Markierung; eine falsche Rasterung verschiebt alle Ladefenster |
 
-Es sind durchweg reine Funktionen mit klaren Verzweigungen und Randfällen (leeres Array, null, Zeitgrenzen, Rundung) – genau dort steckt die Aussagekraft.
+Es sind durchweg reine Funktionen mit klaren Verzweigungen und Randfällen (leeres Array, `undefined`-Werte, Zeitgrenzen, Grenzwerte) – genau dort steckt die Aussagekraft.
 
 ---
 
@@ -330,24 +316,25 @@ Testet den Endpoint `/api/sessions`, der die Ladesessions aus SQLite liest. Ein 
 ### Testausführung
 
 ```bash
-# Unit-Tests Moser (Vitest)
+# Unit-Tests (Vitest – beide Bearbeiter)
 npm run test -- --run WAT4
-
-# Unit-Tests Kalt (Jest)
-npx jest --config WAT4/kalt/jest.config.cjs
 
 # Integrationstests (Cypress CT) – kein Backend nötig
 npm run test:cypress        # CI-Modus
 npm run test:cypress:open   # Interaktiver Browser-Modus
 
 # E2E-Tests (Playwright) – erfordert laufenden evcc-Server
-go run . --config tests/simulator.evcc.yaml &
-npx playwright test WAT4/moser/e2e-tests/
-npx playwright test WAT4/kalt/e2e-tests/
-
-# Lasttests (k6)
 go run . --config tests/basics.evcc.yaml
-npm run test:load
+
+# Moser
+npx playwright test --project=chromium-moser
+
+# Kaltenegger
+npx playwright test --project=chromium
+
+# Lasttests (k6) – erfordert laufenden evcc-Server
+go run . --config tests/basics.evcc.yaml
+k6 run WAT4/moser/load-tests/websocket-load.js
 k6 run WAT4/kalt/load-tests/sessions-load.js
 ```
 
@@ -355,8 +342,7 @@ k6 run WAT4/kalt/load-tests/sessions-load.js
 
 | Test-Typ | Isolationsmechanismus |
 |----------|----------------------|
-| Unit Vitest | Jeder Test mountet die Komponente frisch; kein globaler State; kein Backend |
-| Unit Jest | Reine Funktionen, kein Backend; `clearMocks` zwischen den Fällen; eigene Config kollidiert nicht mit Vitest |
+| Unit (Vitest) | Reine Funktionen bzw. frisch gemountete Komponenten; kein globaler State; kein Backend |
 | Integration (Cypress CT) | Jeder `it()`-Block mountet Komponente neu; Stubs für nicht relevante Sub-Komponenten |
 | E2E (Playwright) | `beforeEach` startet frischen Server; `afterEach` stoppt ihn; jeder Test bekommt eigenen Browser-Context |
 | Lasttest (k6) | Jeder VU ist unabhängig; Server wird manuell gestartet |
@@ -377,8 +363,7 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - run: npm run test          # Vitest (Moser)
-      - run: npx jest --config WAT4/kalt/jest.config.cjs  # Jest (Kalt)
+      - run: npm run test
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -388,8 +373,8 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     steps:
-      - run: go build -o evcc . && ./evcc --config tests/simulator.evcc.yaml &
-      - run: npx playwright test WAT4/e2e-tests/ WAT4/kalt/e2e-tests/
+      - run: go build -o evcc . && ./evcc --config tests/basics.evcc.yaml &
+      - run: npx playwright test
 ```
 
 Lasttests sind nicht für automatische CI-Ausführung vorgesehen, da sie einen laufenden Server und eine kalibrierte Umgebung voraussetzen.
@@ -400,11 +385,11 @@ Lasttests sind nicht für automatische CI-Ausführung vorgesehen, da sie einen l
 
 Die implementierten Tests decken drei qualitativ unterschiedliche Ebenen ab:
 
-**Unit-Ebene:** Moser testet die Ladeplan-Warnungslogik mit 9 Boundary-Tests direkt an der Komponente. Kalt testet 10 Utility-Funktionen (Tarif-Slots, Forecast, Smart-Charging-Kern) mit 34 Fällen als reine Funktionen ohne Browser. Zusammen decken beide die kritischsten Berechnungen der Anwendung ab.
+**Unit-Ebene:** Moser testet die Ladeplan-Warnungslogik mit 9 Boundary-Tests direkt an der Komponente. Kaltenegger testet 3 Utility-Module (Forecast-Algorithmen, Remote-Erkennung, Tarifsystem) mit 12 Fällen als reine Funktionen ohne Browser. Zusammen decken beide die kritischsten Berechnungen der Anwendung ab.
 
-**Integrationsebene:** Beide nutzen Cypress CT, testen aber unterschiedliche Bereiche. Moser prüft das Zusammenspiel rund um `Vehicle.vue` (Boost-Button, MinSoc, Abfahrtsplan). Kalt prüft die Darstellungskomponenten für Tarife und Sessions (TariffChart, DateNavigator, SessionTable).
+**Integrationsebene:** Beide nutzen Cypress CT, testen aber unterschiedliche Bereiche. Moser prüft das Zusammenspiel rund um `Vehicle.vue` (Boost-Button, MinSoc, Abfahrtsplan). Kaltenegger prüft die Darstellungskomponenten für Tarife und Sessions (TariffChart, DateNavigator, SessionTable).
 
-**E2E-Ebene:** Mosers Tests decken den Ladestart-Flow und Smart-Cost ab. Kalts Tests decken die Ladeplanung und die Live-Daten-Anzeige ab. Zusammen ergibt sich eine breite Abdeckung der wichtigsten User-Journeys.
+**E2E-Ebene:** Mosers Tests decken den Ladestart-Flow und Smart-Cost ab. Kalteneggers Tests decken die Ladeplanung und die Live-Daten-Anzeige ab. Zusammen ergibt sich eine breite Abdeckung der wichtigsten User-Journeys.
 
 Die Auswahl der Testbereiche folgte dem Kriterium des **höchsten Schadenspotenzials bei einem Bug**: Bereiche, in denen ein einzelner Fehler entweder alle Nutzer betrifft oder direkte wirtschaftliche Konsequenzen hat, wurden bevorzugt getestet.
 
